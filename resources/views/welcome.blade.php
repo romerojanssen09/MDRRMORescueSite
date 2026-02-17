@@ -154,7 +154,7 @@
             
             <!-- Primary CTA -->
             <div class="flex flex-col items-center gap-4 sm:gap-6 mb-6 sm:mb-8 px-4">
-                <a href="/downloads/mdrrmo-app.apk" download class="download-btn text-primary-900 w-full sm:w-auto px-8 sm:px-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-3 group">
+                <a href="https://github.com/romerojanssen09/MDRRMORescueSite/releases/download/mdrrmo/mdrrmo-app.apk" download class="download-btn text-primary-900 w-full sm:w-auto px-8 sm:px-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-3 group">
                     <i class="fab fa-android text-2xl group-hover:scale-110 transition-transform"></i>
                     <div class="text-left">
                         <div class="text-xs sm:text-sm opacity-80">Download for Android</div>
