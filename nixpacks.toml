@@ -6,6 +6,11 @@ cmds = [
     "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader",
     "npm ci",
     "npm run build",
+    "echo '=== Checking build output ==='",
+    "ls -la public/build/ || echo 'Build directory not found'",
+    "ls -la public/build/assets/ || echo 'Assets directory not found'",
+    "cat public/build/manifest.json || echo 'Manifest not found'",
+    "echo '=== Build check complete ==='",
     "rm -rf node_modules",
     "npm ci --only=production"
 ]
@@ -14,6 +19,8 @@ cmds = [
 cmds = [
     "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache",
     "chmod -R 775 storage bootstrap/cache",
+    "chmod -R 755 public/build",
+    "ls -la public/build/assets || echo 'Build assets not found!'",
     "rm -f public/hot",
     "php artisan config:clear || true",
     "php artisan route:clear || true",
