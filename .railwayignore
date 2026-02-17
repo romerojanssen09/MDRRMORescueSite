@@ -38,11 +38,15 @@ Thumbs.db
 # Logs
 /storage/logs/*.log
 
-# Cache
+# Cache files (but keep directory structure)
 /bootstrap/cache/*.php
+!/bootstrap/cache/.gitignore
 /storage/framework/cache/*
+!/storage/framework/cache/.gitignore
 /storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
 /storage/framework/views/*
+!/storage/framework/views/.gitignore
 
 # Documentation (not needed in production)
 /DEPLOYMENT_CHECKLIST.md
