@@ -99,10 +99,18 @@ git commit -m "Your changes"
 
 ### 2. Deploy to Production
 ```bash
+# Build assets first
+npm run build
+
 # Switch to production config
 cp production.env .env
 php artisan config:clear
 php artisan config:cache
+php artisan optimize
+
+# Commit built assets
+git add public/build -f
+git commit -m "Build assets for production"
 
 # Push to production (Railway)
 git push origin main

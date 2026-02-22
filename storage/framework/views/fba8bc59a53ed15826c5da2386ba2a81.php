@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDRRMO Rescue System</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Grid Background Pattern */
@@ -123,7 +123,7 @@
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4">
                     <a href="#features" class="text-xs sm:text-sm text-primary-300 hover:text-secondary-400 transition hidden sm:block">Features</a>
-                    <a href="{{ route('admin.login') }}" class="btn-accent px-4 py-2 sm:px-6 text-xs sm:text-sm font-medium">
+                    <a href="<?php echo e(route('admin.login')); ?>" class="btn-accent px-4 py-2 sm:px-6 text-xs sm:text-sm font-medium">
                         Admin
                     </a>
                 </div>
@@ -163,7 +163,7 @@
             
             <!-- Secondary Actions -->
             <div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 px-4">
-                <a href="{{ route('admin.login') }}" class="border border-secondary-400/30 text-secondary-400 px-6 py-3 rounded-lg font-medium hover:bg-secondary-400/10 hover:border-secondary-400/50 transition text-sm w-full sm:w-auto">
+                <a href="<?php echo e(route('admin.login')); ?>" class="border border-secondary-400/30 text-secondary-400 px-6 py-3 rounded-lg font-medium hover:bg-secondary-400/10 hover:border-secondary-400/50 transition text-sm w-full sm:w-auto">
                     <i class="fas fa-user-shield mr-2"></i>Admin Dashboard
                 </a>
                 <a href="#features" class="border border-primary-600 text-primary-200 px-6 py-3 rounded-lg font-medium hover:bg-white/5 hover:border-primary-500 transition text-sm w-full sm:w-auto">
@@ -274,7 +274,7 @@
             <div class="bg-gradient-to-br from-secondary-400/10 to-transparent border border-secondary-400/20 rounded-2xl p-8 sm:p-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Ready to Get Started?</h2>
                 <p class="text-primary-300 mb-8 sm:mb-10 text-base sm:text-lg">Access the admin dashboard to manage emergency operations</p>
-                <a href="{{ route('admin.login') }}" class="btn-accent inline-block w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-xl hover:scale-105 transition-transform">
+                <a href="<?php echo e(route('admin.login')); ?>" class="btn-accent inline-block w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-xl hover:scale-105 transition-transform">
                     <i class="fas fa-sign-in-alt mr-2"></i>Login to Admin Panel
                 </a>
                 <div class="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-primary-700/30">
@@ -303,7 +303,7 @@
                     </div>
                 </div>
                 <div class="text-center md:text-right">
-                    <p class="text-sm text-primary-400">&copy; {{ date('Y') }} All rights reserved</p>
+                    <p class="text-sm text-primary-400">&copy; <?php echo e(date('Y')); ?> All rights reserved</p>
                     <p class="text-xs text-primary-600 mt-1">Built with Laravel & React Native</p>
                 </div>
             </div>
@@ -311,3 +311,4 @@
     </footer>
 </body>
 </html>
+<?php /**PATH D:\New folder (4)\MDRRMORescueApp\MDRRMOSite\resources\views\welcome.blade.php ENDPATH**/ ?>
