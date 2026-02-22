@@ -50,8 +50,8 @@ class UserController extends Controller
         ]);
 
         try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseAnonKey = env('SUPABASE_ANON_KEY');
+            $supabaseUrl = config('services.supabase.url');
+            $supabaseAnonKey = config('services.supabase.anon_key');
             
             \Log::info('Creating user via Supabase Auth API (mobile app pattern)', [
                 'email' => $validated['email'],
@@ -159,8 +159,8 @@ class UserController extends Controller
     public function syncFromAuth()
     {
         try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+            $supabaseUrl = config('services.supabase.url');
+            $supabaseServiceKey = config('services.supabase.service_key');
             
             if (!$supabaseServiceKey || $supabaseServiceKey === 'your_service_role_key_here') {
                 return redirect()->back()

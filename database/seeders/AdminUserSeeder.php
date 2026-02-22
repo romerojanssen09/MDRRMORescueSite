@@ -26,8 +26,8 @@ class AdminUserSeeder extends Seeder
         }
 
         try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseAnonKey = env('SUPABASE_ANON_KEY');
+            $supabaseUrl = config('services.supabase.url');
+            $supabaseAnonKey = config('services.supabase.anon_key');
 
             if (!$supabaseUrl || !$supabaseAnonKey) {
                 $this->command->error('Supabase configuration missing in .env file');

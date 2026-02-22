@@ -201,8 +201,8 @@
                 return;
             }
 
-            const supabaseUrl = 'https://bfhsgdzciuafiobxflce.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmaHNnZHpjaXVhZmlvYnhmbGNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjMwMTUsImV4cCI6MjA4NjIzOTAxNX0.Sna2YeX6cxknmuRas5UU3m_EcS7B4cpNCgG7WBt-HG0';
+            const supabaseUrl = '{{ config('services.supabase.url') }}';
+            const supabaseKey = '{{ config('services.supabase.anon_key') }}';
             
             try {
                 window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
