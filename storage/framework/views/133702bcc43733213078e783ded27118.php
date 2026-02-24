@@ -484,6 +484,11 @@
                             // Fetch full report data and add to table
                             await fetchAndAddReport(newReport.id);
                             
+                            // Add to urgent reports section if status is Pending
+                            if (newReport.status === 'Pending') {
+                                await addToUrgentReports(newReport.id);
+                            }
+                            
                             // Update all stats
                             await updateAllStats();
                             
@@ -706,6 +711,117 @@
             // Even if fetch fails, still update stats
             console.log('⚠️ Could not add report to table, but stats will be updated');
         }
+    }
+
+    // Add new report to urgent reports section
+    async function addToUrgentReports(reportId) {
+        try {
+            console.log('🚨 Adding to urgent reports:', reportId);
+            
+            // Fetch report data
+            const { data: report, error: reportError } = await window.supabaseClient
+                .from('emergency_reports')
+                .select('*')
+                .eq('id', reportId)
+                .single();
+
+            if (reportError) {
+                console.error('❌ Error fetching report for urgent section:', reportError);
+                return;
+            }
+
+            // Fetch citizen name if available
+            if (report.citizen_id) {
+                const { data: citizen, error: citizenError } = await window.supabaseClient
+                    .from('users')
+                    .select('full_name')
+                    .eq('id', report.citizen_id)
+                    .single();
+
+                if (!citizenError && citizen) {
+                    report.citizen = citizen;
+                }
+            }
+
+            // Add to urgent reports section
+            const urgentContainer = document.querySelector('.urgent-reports-container');
+            if (!urgentContainer) return;
+
+            // Remove "no urgent reports" message if it exists
+            const noReportsMsg = urgentContainer.querySelector('.text-center');
+            if (noReportsMsg) {
+                noReportsMsg.remove();
+            }
+
+            // Create and add the urgent report card
+            const card = createUrgentReportCard(report);
+            urgentContainer.insertBefore(card, urgentContainer.firstChild);
+
+            // Animate the new card
+            setTimeout(() => {
+                card.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+                setTimeout(() => {
+                    card.style.transition = 'background-color 2s';
+                    card.style.backgroundColor = '';
+                }, 1000);
+            }, 100);
+
+            console.log('✅ Added to urgent reports section');
+        } catch (error) {
+            console.error('❌ Error in addToUrgentReports:', error);
+        }
+    }
+
+    // Create urgent report card element
+    function createUrgentReportCard(report) {
+        const card = document.createElement('div');
+        card.className = 'urgent-report-card bg-primary-800/50 border border-primary-700 rounded-lg p-3 hover:bg-primary-700/50 transition new-item';
+        card.setAttribute('data-report-id', report.id);
+
+        const citizenName = report.citizen?.full_name || 'Guest';
+        
+        // Format location
+        const locationParts = report.location.split(':');
+        const reversedLocation = locationParts.reverse();
+        const formattedLocation = reversedLocation.join(': ');
+        const truncatedLocation = formattedLocation.substring(0, 45) + (formattedLocation.length > 45 ? '...' : '');
+
+        // Format time
+        const timeAgo = report.created_at ? new Date(report.created_at).toLocaleString() : 'Just now';
+
+        card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="px-2 py-0.5 text-xs rounded bg-accent-900 text-accent-300 font-medium">
+                            ${report.emergency_type}
+                        </span>
+                        <span class="px-2 py-0.5 text-xs rounded bg-accent-400 text-primary-950 font-bold">
+                            NEW
+                        </span>
+                    </div>
+                    <p class="text-xs text-primary-200 mb-1 truncate">
+                        ${truncatedLocation}
+                    </p>
+                    <p class="text-xs text-primary-500">
+                        ${citizenName} • Just now
+                    </p>
+                </div>
+                <div class="flex gap-1.5 flex-shrink-0">
+                    <a href="/admin/reports/${report.id}/assign-map" 
+                       class="inline-flex items-center px-3 py-1.5 bg-secondary-400 hover:bg-secondary-500 text-primary-950 rounded-lg transition font-medium text-xs">
+                        <i class="fas fa-users mr-1"></i>
+                        Assign
+                    </a>
+                    <a href="/admin/reports/${report.id}" 
+                       class="inline-flex items-center justify-center w-8 h-8 border border-primary-600 text-primary-300 hover:bg-primary-600 rounded-lg transition">
+                        <i class="fas fa-eye text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        `;
+
+        return card;
     }
 
     // Add report row to table
