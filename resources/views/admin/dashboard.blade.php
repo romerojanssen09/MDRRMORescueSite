@@ -177,6 +177,24 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <i class="fas fa-user-check text-secondary-400 text-sm"></i>
+                            <span class="text-xs text-primary-200">Verified Rescuers</span>
+                        </div>
+                        <span id="stat-verified-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300">{{ $stats['verified_rescuers'] }}</span>
+                    </div>
+                    @if($stats['pending_rescuers'] > 0)
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user-clock text-accent-400 text-sm animate-pulse"></i>
+                            <span class="text-xs text-primary-200">Pending Approval</span>
+                        </div>
+                        <a href="{{ route('admin.users.index', ['verified' => 'pending']) }}" class="text-sm font-semibold text-accent-400 hover:text-accent-300 transition-all duration-300">
+                            {{ $stats['pending_rescuers'] }}
+                        </a>
+                    </div>
+                    @endif
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-heartbeat text-secondary-400 text-sm"></i>
                             <span class="text-xs text-primary-200">Rescuers Ready</span>
                         </div>
                         <span id="stat-available-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300">{{ $stats['available_rescuers'] }}</span>

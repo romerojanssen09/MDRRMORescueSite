@@ -83,21 +83,63 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs text-primary-400 mb-2">Phone Number</label>
-                    <input type="tel" 
-                           name="phone" 
-                           id="phone"
-                           value="{{ session('clear_form') ? '' : old('phone') }}" 
-                           class="input-field text-sm @error('phone') border-accent-400 @enderror" 
-                           placeholder="09123456789"
-                           maxlength="11"
-                           pattern="[0-9]{11}"
-                           inputmode="numeric">
+                    <label class="block text-xs text-primary-400 mb-2">Phone Number *</label>
+                    <div class="flex items-center input-field text-sm p-0 @error('phone') border-accent-400 @enderror">
+                        <span class="px-3 text-secondary-400 font-semibold">+63</span>
+                        <input type="tel" 
+                               name="phone" 
+                               id="phone"
+                               value="{{ session('clear_form') ? '' : old('phone') }}" 
+                               class="flex-1 bg-transparent border-0 focus:ring-0 text-sm" 
+                               placeholder="9123456789"
+                               maxlength="10"
+                               pattern="[0-9]{10}"
+                               inputmode="numeric"
+                               required>
+                    </div>
                     @error('phone')
                         <p class="text-accent-400 text-xs mt-1">{{ $message }}</p>
                     @enderror
                     <p class="text-xs text-primary-500 mt-1">
-                        <i class="fas fa-phone mr-1"></i>11 digits (e.g., 09123456789)
+                        <i class="fas fa-phone mr-1"></i>+63 9XX XXX XXXX (10 digits after +63)
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-primary-400 mb-2">Badge Number *</label>
+                    <input type="text" 
+                           name="badge_number" 
+                           id="badge_number"
+                           value="{{ session('clear_form') ? '' : old('badge_number') }}" 
+                           class="input-field text-sm @error('badge_number') border-accent-400 @enderror" 
+                           placeholder="MDRRMO-001"
+                           required>
+                    @error('badge_number')
+                        <p class="text-accent-400 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-primary-500 mt-1">
+                        <i class="fas fa-id-badge mr-1"></i>Unique badge identifier
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-primary-400 mb-2">Specialization *</label>
+                    <select name="specialization" 
+                            id="specialization"
+                            class="input-field text-sm @error('specialization') border-accent-400 @enderror" 
+                            required>
+                        <option value="">Select specialization...</option>
+                        @foreach($specializations as $spec)
+                            <option value="{{ $spec->name }}" {{ old('specialization') === $spec->name ? 'selected' : '' }}>
+                                {{ $spec->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('specialization')
+                        <p class="text-accent-400 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-primary-500 mt-1">
+                        <i class="fas fa-user-shield mr-1"></i>Rescuer's area of expertise
                     </p>
                 </div>
             </div>
@@ -209,10 +251,16 @@
             isValid = false;
         }
         
-        // Validate phone (optional, but if provided must be 11 digits)
+        // Validate phone (required, must be 10 digits)
         const phone = document.getElementById('phone');
-        if (phone.value && phone.value.length !== 11) {
-            showError('phone', 'Phone number must be exactly 11 digits');
+        if (!phone.value) {
+            showError('phone', 'Phone number is required');
+            isValid = false;
+        } else if (phone.value.length !== 10) {
+            showError('phone', 'Phone number must be exactly 10 digits (after +63)');
+            isValid = false;
+        } else if (!/^9/.test(phone.value)) {
+            showError('phone', 'Phone number must start with 9');
             isValid = false;
         }
         
@@ -262,16 +310,16 @@
         });
     });
     
-    // Phone number: only allow numbers and limit to 11 digits
+    // Phone number: only allow numbers and limit to 10 digits
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
         phoneInput.addEventListener('input', function(e) {
             // Remove any non-numeric characters
             this.value = this.value.replace(/[^0-9]/g, '');
             
-            // Limit to 11 digits
-            if (this.value.length > 11) {
-                this.value = this.value.slice(0, 11);
+            // Limit to 10 digits
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
             }
         });
         
@@ -279,7 +327,7 @@
         phoneInput.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-            const numericOnly = pastedText.replace(/[^0-9]/g, '').slice(0, 11);
+            const numericOnly = pastedText.replace(/[^0-9]/g, '').slice(0, 10);
             this.value = numericOnly;
         });
     }
@@ -308,7 +356,9 @@
                 <div class="text-left space-y-2">
                     <p class="text-sm"><strong class="text-secondary-400">Name:</strong> ${form.full_name.value}</p>
                     <p class="text-sm"><strong class="text-secondary-400">Email:</strong> ${form.email.value}</p>
-                    <p class="text-sm"><strong class="text-secondary-400">Phone:</strong> ${form.phone.value || 'Not provided'}</p>
+                    <p class="text-sm"><strong class="text-secondary-400">Phone:</strong> +63${form.phone.value}</p>
+                    <p class="text-sm"><strong class="text-secondary-400">Badge:</strong> ${form.badge_number.value}</p>
+                    <p class="text-sm"><strong class="text-secondary-400">Specialization:</strong> ${form.specialization.options[form.specialization.selectedIndex].text}</p>
                     <p class="mt-4 text-xs text-primary-400">The user will be able to login with this email and password in the mobile app.</p>
                 </div>
             `,

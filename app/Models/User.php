@@ -19,6 +19,7 @@ class User extends Authenticatable
         'phone',
         'role',
         'rescue_team_id',
+        'is_verified',
         'avatar_url',
         'encrypted_password',
         'expo_push_token',

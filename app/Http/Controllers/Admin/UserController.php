@@ -13,10 +13,19 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::select('id', 'full_name', 'email', 'phone', 'role', 'rescue_team_id', 'created_at');
+        $query = User::select('id', 'full_name', 'email', 'phone', 'role', 'rescue_team_id', 'is_verified', 'created_at');
 
         if ($request->filled('role')) {
             $query->where('role', $request->role);
+        }
+        
+        // Filter by verification status
+        if ($request->filled('verified')) {
+            if ($request->verified === 'pending') {
+                $query->where('role', 'rescuer')->where('is_verified', false);
+            } elseif ($request->verified === 'verified') {
+                $query->where('is_verified', true);
+            }
         }
 
         if ($request->filled('search')) {
@@ -28,14 +37,24 @@ class UserController extends Controller
         }
 
         $users = $query->latest()->paginate(20);
+        
+        // Get pending rescuer count for badge
+        $pendingCount = User::where('role', 'rescuer')
+            ->where('is_verified', false)
+            ->count();
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'pendingCount'));
     }
 
     public function create()
     {
-        // No need to show role selection - all created users are rescuers
-        return view('admin.users.create');
+        // Fetch active specializations
+        $specializations = \DB::table('specializations')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return view('admin.users.create', compact('specializations'));
     }
 
     public function store(Request $request)
@@ -43,10 +62,13 @@ class UserController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|regex:/^[0-9]{11}$/',
+            'phone' => 'required|string|regex:/^[0-9]{10}$/',
+            'badge_number' => 'required|string|max:255',
+            'specialization' => 'required|string|max:255',
             'password' => 'required|min:8|confirmed',
         ], [
-            'phone.regex' => 'Phone number must be exactly 11 digits.',
+            'phone.regex' => 'Phone number must be exactly 10 digits (after +63).',
+            'phone.required' => 'Phone number is required.',
         ]);
 
         try {
@@ -71,8 +93,10 @@ class UserController extends Controller
                 'password' => $validated['password'],
                 'data' => [
                     'full_name' => $validated['full_name'],
-                    'phone' => $validated['phone'] ?? null,
+                    'phone' => '+63' . $validated['phone'], // Add +63 prefix
                     'role' => 'rescuer',
+                    'badge_number' => $validated['badge_number'],
+                    'specialization' => $validated['specialization'],
                 ]
             ]);
 
@@ -94,13 +118,25 @@ class UserController extends Controller
                 
                 if (!$existingUser) {
                     // Create the user in public.users table only if it doesn't exist
+                    // Admin-created rescuers are auto-verified
                     DB::table('users')->insert([
                         'id' => $userId,
                         'email' => $validated['email'],
                         'full_name' => $validated['full_name'],
-                        'phone' => $validated['phone'] ?? null,
+                        'phone' => '+63' . $validated['phone'],
                         'role' => 'rescuer',
                         'is_active' => true,
+                        'is_verified' => true, // Auto-verify admin-created rescuers
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    
+                    // Create rescuer profile
+                    DB::table('rescuer_profiles')->insert([
+                        'user_id' => $userId,
+                        'badge_number' => $validated['badge_number'],
+                        'specialization' => $validated['specialization'],
+                        'status' => 'available',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -252,5 +288,41 @@ class UserController extends Controller
         $user->delete();
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully');
+    }
+    
+    /**
+     * Verify a rescuer account
+     */
+    public function verify(User $user)
+    {
+        if ($user->role !== 'rescuer') {
+            return redirect()->back()
+                ->with('error', 'Only rescuer accounts need verification');
+        }
+        
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update(['is_verified' => true, 'updated_at' => now()]);
+        
+        return redirect()->back()
+            ->with('success', 'Rescuer account verified successfully');
+    }
+    
+    /**
+     * Reject/unverify a rescuer account
+     */
+    public function unverify(User $user)
+    {
+        if ($user->role !== 'rescuer') {
+            return redirect()->back()
+                ->with('error', 'Only rescuer accounts can be unverified');
+        }
+        
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update(['is_verified' => false, 'updated_at' => now()]);
+        
+        return redirect()->back()
+            ->with('success', 'Rescuer account unverified');
     }
 }

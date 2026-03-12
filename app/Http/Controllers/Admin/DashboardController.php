@@ -23,12 +23,14 @@ class DashboardController extends Controller
                 ")
                 ->first();
 
-            // Use a single query to get all user counts by role
+            // Use a single query to get all user counts by role and verification
             $userCounts = DB::table('users')
                 ->selectRaw("
                     COUNT(*) as total,
                     COUNT(CASE WHEN role = 'citizen' THEN 1 END) as citizens,
-                    COUNT(CASE WHEN role = 'rescuer' THEN 1 END) as rescuers
+                    COUNT(CASE WHEN role = 'rescuer' THEN 1 END) as rescuers,
+                    COUNT(CASE WHEN role = 'rescuer' AND is_verified = true THEN 1 END) as verified_rescuers,
+                    COUNT(CASE WHEN role = 'rescuer' AND is_verified = false THEN 1 END) as pending_rescuers
                 ")
                 ->first();
 
@@ -40,9 +42,11 @@ class DashboardController extends Controller
                 ")
                 ->first();
 
-            // Get available rescuers count
+            // Get available rescuers count (only verified)
             $availableRescuers = DB::table('rescuer_profiles')
-                ->where('status', 'available')
+                ->join('users', 'rescuer_profiles.user_id', '=', 'users.id')
+                ->where('rescuer_profiles.status', 'available')
+                ->where('users.is_verified', true)
                 ->count();
 
             return [
@@ -53,6 +57,8 @@ class DashboardController extends Controller
                 'total_users' => $userCounts->total,
                 'total_citizens' => $userCounts->citizens,
                 'total_rescuers' => $userCounts->rescuers,
+                'verified_rescuers' => $userCounts->verified_rescuers,
+                'pending_rescuers' => $userCounts->pending_rescuers,
                 'available_rescuers' => $availableRescuers,
                 'total_teams' => $teamCounts->total,
                 'available_teams' => $teamCounts->available,

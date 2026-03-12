@@ -1,22 +1,30 @@
 <?php
 
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\ReportController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
-// Notification routes
-Route::prefix('notifications')->group(function () {
-    Route::get('/', [NotificationController::class, 'index']);
-    Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::delete('/{id}', [NotificationController::class, 'destroy']);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public API routes (no authentication required)
+Route::get('/specializations', function () {
+    $specializations = DB::table('specializations')
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->select('id', 'name', 'description')
+        ->get();
+    
+    return response()->json([
+        'success' => true,
+        'data' => $specializations
+    ]);
 });
 
-// Report routes
-Route::prefix('reports')->group(function () {
-    Route::post('/{id}/complete', [ReportController::class, 'markAsCompleted']);
-    Route::get('/rescuer', [ReportController::class, 'getRescuerReports']);
+// Health check
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
 });
-
-// User routes
-Route::post('/users/expo-token', [ReportController::class, 'updateExpoPushToken']);

@@ -32,10 +32,19 @@ class RescueTeamController extends Controller
 
     public function create()
     {
+        // Only show verified rescuers without a team
         $availableRescuers = \App\Models\User::where('role', 'rescuer')
+            ->where('is_verified', true)
             ->whereNull('rescue_team_id')
             ->get();
-        return view('admin.teams.create', compact('availableRescuers'));
+        
+        // Fetch active specializations
+        $specializations = \DB::table('specializations')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+            
+        return view('admin.teams.create', compact('availableRescuers', 'specializations'));
     }
 
     public function store(Request $request)
@@ -52,11 +61,44 @@ class RescueTeamController extends Controller
             'member_ids' => 'required|array|min:1',
             'member_ids.*' => 'exists:users,id',
         ]);
+        
+        // If new specialization is provided, add it to the specializations table
+        $specializationName = $validated['specialization'];
+        $existingSpec = \DB::table('specializations')
+            ->where('name', $specializationName)
+            ->first();
+        
+        if (!$existingSpec) {
+            \DB::table('specializations')->insert([
+                'name' => $specializationName,
+                'description' => 'Added by admin during team creation',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // If specialization is new, add it to the specializations table
+        $specializationName = trim($validated['specialization']);
+        $existingSpec = \DB::table('specializations')
+            ->where('name', $specializationName)
+            ->first();
+            
+        if (!$existingSpec) {
+            \DB::table('specializations')->insert([
+                'name' => $specializationName,
+                'description' => 'Added by admin',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \Log::info('New specialization added', ['name' => $specializationName]);
+        }
 
         // Create the team with default status 'Available'
         $team = RescueTeam::create([
             'team_name' => $validated['team_name'],
-            'specialization' => $validated['specialization'],
+            'specialization' => $specializationName,
             'status' => 'Available',
             'province' => $validated['province'],
             'municipality' => $validated['municipality'],
@@ -105,13 +147,22 @@ class RescueTeamController extends Controller
     public function edit(RescueTeam $team)
     {
         $team->load('members');
+        // Only show verified rescuers
         $availableRescuers = \App\Models\User::where('role', 'rescuer')
+            ->where('is_verified', true)
             ->where(function($q) use ($team) {
                 $q->whereNull('rescue_team_id')
                   ->orWhere('rescue_team_id', $team->id);
             })
             ->get();
-        return view('admin.teams.edit', compact('team', 'availableRescuers'));
+        
+        // Fetch active specializations
+        $specializations = \DB::table('specializations')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return view('admin.teams.edit', compact('team', 'availableRescuers', 'specializations'));
     }
 
     public function update(Request $request, RescueTeam $team)

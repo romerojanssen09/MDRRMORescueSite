@@ -21,6 +21,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     Route::resource('users', UserController::class);
+    Route::post('/users/{user}/verify', [UserController::class, 'verify'])->name('users.verify');
+    Route::post('/users/{user}/unverify', [UserController::class, 'unverify'])->name('users.unverify');
     Route::get('/users-sync', [UserController::class, 'syncFromAuth'])->name('users.sync');
     Route::resource('reports', EmergencyReportController::class)->except(['create', 'store', 'edit']);
     Route::get('/reports/{report}/assign-map', [EmergencyReportController::class, 'assignMap'])->name('reports.assign-map');

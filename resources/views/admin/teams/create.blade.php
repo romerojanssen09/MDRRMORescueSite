@@ -40,10 +40,27 @@
 
                 <div>
                     <label class="block text-xs text-primary-400 mb-2">Specialization *</label>
-                    <input type="text" name="specialization" value="{{ old('specialization') }}" class="input-field text-sm @error('specialization') border-accent-400 @enderror" placeholder="e.g., Fire & Rescue, Medical" required>
+                    <select name="specialization_select" id="specialization_select" class="input-field text-sm @error('specialization') border-accent-400 @enderror" onchange="handleSpecializationChange()" required>
+                        <option value="">Select specialization...</option>
+                        @foreach($specializations as $spec)
+                            <option value="{{ $spec->name }}" {{ old('specialization') === $spec->name ? 'selected' : '' }}>
+                                {{ $spec->name }}
+                            </option>
+                        @endforeach
+                        <option value="__other__" {{ old('specialization_select') === '__other__' ? 'selected' : '' }}>Other (Add New)</option>
+                    </select>
+                    <input type="text" 
+                           name="specialization" 
+                           id="specialization_input" 
+                           value="{{ old('specialization') }}" 
+                           class="input-field text-sm mt-2 hidden @error('specialization') border-accent-400 @enderror" 
+                           placeholder="Enter new specialization">
                     @error('specialization')
                         <p class="text-accent-400 text-xs mt-1">{{ $message }}</p>
                     @enderror
+                    <p class="text-xs text-primary-500 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>Select "Other" to add a new specialization
+                    </p>
                 </div>
             </div>
         </div>
@@ -159,6 +176,36 @@
 </style>
 
 <script>
+function handleSpecializationChange() {
+    const select = document.getElementById('specialization_select');
+    const input = document.getElementById('specialization_input');
+    
+    if (select.value === '__other__') {
+        input.classList.remove('hidden');
+        input.required = true;
+        input.focus();
+    } else {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = select.value;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('specialization_select');
+    const input = document.getElementById('specialization_input');
+    
+    // If there's an old value that's not in the dropdown, show the input
+    if (input.value && select.value === '') {
+        select.value = '__other__';
+        input.classList.remove('hidden');
+        input.required = true;
+    } else if (select.value && select.value !== '__other__') {
+        input.value = select.value;
+    }
+});
+
 document.getElementById('teamForm').addEventListener('submit', function() {
     const btn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');

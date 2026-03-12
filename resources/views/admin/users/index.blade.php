@@ -15,7 +15,7 @@
             </a>
         @endif
     </div>
-    <form method="GET" id="filter-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <form method="GET" id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
             <label class="block text-xs text-primary-400 mb-2">Role</label>
             <select name="role" class="input-field text-sm w-full" onchange="this.form.submit()">
@@ -23,6 +23,17 @@
                 <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                 <option value="rescuer" {{ request('role') === 'rescuer' ? 'selected' : '' }}>Rescuer</option>
                 <option value="citizen" {{ request('role') === 'citizen' ? 'selected' : '' }}>Citizen</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-xs text-primary-400 mb-2">Verification Status</label>
+            <select name="verified" class="input-field text-sm w-full" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="verified" {{ request('verified') === 'verified' ? 'selected' : '' }}>Verified</option>
+                <option value="pending" {{ request('verified') === 'pending' ? 'selected' : '' }}>
+                    Pending Approval @if($pendingCount > 0)({{ $pendingCount }})@endif
+                </option>
             </select>
         </div>
         
@@ -57,6 +68,7 @@
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">User</th>
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Contact</th>
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Role</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Status</th>
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Team</th>
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Joined</th>
                     <th class="px-5 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">Actions</th>
@@ -89,6 +101,21 @@
                         @endif
                     </td>
                     <td class="px-5 py-4">
+                        @if($user->role === 'rescuer')
+                            @if($user->is_verified)
+                                <span class="px-2 py-1 text-xs rounded-md bg-secondary-900 text-secondary-300 font-medium">
+                                    <i class="fas fa-check-circle mr-1"></i>Verified
+                                </span>
+                            @else
+                                <span class="px-2 py-1 text-xs rounded-md bg-accent-900 text-accent-300 font-medium animate-pulse">
+                                    <i class="fas fa-clock mr-1"></i>Pending
+                                </span>
+                            @endif
+                        @else
+                            <span class="text-sm text-primary-500">-</span>
+                        @endif
+                    </td>
+                    <td class="px-5 py-4">
                         @if($user->rescue_team_id)
                             <span class="text-sm text-secondary-400">
                                 <i class="fas fa-users mr-1 text-xs"></i>Assigned
@@ -102,6 +129,21 @@
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
                         <div class="flex items-center space-x-3">
+                            @if($user->role === 'rescuer' && !$user->is_verified)
+                                <form action="{{ route('admin.users.verify', $user) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="text-secondary-400 hover:text-secondary-300 transition" title="Verify Account">
+                                        <i class="fas fa-check-circle text-sm"></i>
+                                    </button>
+                                </form>
+                            @elseif($user->role === 'rescuer' && $user->is_verified)
+                                <form action="{{ route('admin.users.unverify', $user) }}" method="POST" class="inline" onsubmit="return confirm('Unverify this rescuer?')">
+                                    @csrf
+                                    <button type="submit" class="text-accent-400 hover:text-accent-300 transition" title="Unverify Account">
+                                        <i class="fas fa-times-circle text-sm"></i>
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('admin.users.show', $user) }}" class="text-secondary-400 hover:text-secondary-300 transition" title="View">
                                 <i class="fas fa-eye text-sm"></i>
                             </a>
@@ -122,7 +164,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-5 py-8 text-center">
+                    <td colspan="7" class="px-5 py-8 text-center">
                         <i class="fas fa-user-slash text-3xl text-primary-700 mb-2"></i>
                         <p class="text-sm text-primary-500">No users found</p>
                     </td>
