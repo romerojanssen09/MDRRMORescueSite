@@ -1,10 +1,8 @@
-@extends('layouts.admin')
+<?php $__env->startSection('title', 'Dashboard - MDRRMO Admin'); ?>
+<?php $__env->startSection('header', 'Dashboard'); ?>
+<?php $__env->startSection('subtitle', 'Real-time emergency analytics and monitoring'); ?>
 
-@section('title', 'Dashboard - MDRRMO Admin')
-@section('header', 'Dashboard')
-@section('subtitle', 'Real-time emergency analytics and monitoring')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <!-- Key Metrics -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <!-- Total Reports -->
@@ -16,7 +14,7 @@
             <span class="text-xs text-primary-400 font-medium">ALL TIME</span>
         </div>
         <p class="text-xs text-primary-400 mb-1">Total Reports</p>
-        <p id="stat-total-reports" class="text-2xl font-bold text-primary-100 transition-all duration-300">{{ $stats['total_reports'] }}</p>
+        <p id="stat-total-reports" class="text-2xl font-bold text-primary-100 transition-all duration-300"><?php echo e($stats['total_reports']); ?></p>
     </div>
 
     <!-- Pending Reports -->
@@ -28,7 +26,7 @@
             <span class="text-xs text-accent-400 font-medium">URGENT</span>
         </div>
         <p class="text-xs text-primary-400 mb-1">Pending</p>
-        <p id="stat-pending-reports" class="text-2xl font-bold text-accent-400 transition-all duration-300">{{ $stats['pending_reports'] }}</p>
+        <p id="stat-pending-reports" class="text-2xl font-bold text-accent-400 transition-all duration-300"><?php echo e($stats['pending_reports']); ?></p>
     </div>
 
     <!-- In Progress -->
@@ -40,7 +38,7 @@
             <span class="text-xs text-secondary-400 font-medium">ACTIVE</span>
         </div>
         <p class="text-xs text-primary-400 mb-1">In Progress</p>
-        <p id="stat-in-progress-reports" class="text-2xl font-bold text-secondary-400 transition-all duration-300">{{ $stats['in_progress_reports'] }}</p>
+        <p id="stat-in-progress-reports" class="text-2xl font-bold text-secondary-400 transition-all duration-300"><?php echo e($stats['in_progress_reports']); ?></p>
     </div>
 
     <!-- Completed -->
@@ -52,7 +50,7 @@
             <span class="text-xs text-primary-400 font-medium">RESOLVED</span>
         </div>
         <p class="text-xs text-primary-400 mb-1">Completed</p>
-        <p id="stat-completed-reports" class="text-2xl font-bold text-primary-100 transition-all duration-300">{{ $stats['completed_reports'] }}</p>
+        <p id="stat-completed-reports" class="text-2xl font-bold text-primary-100 transition-all duration-300"><?php echo e($stats['completed_reports']); ?></p>
     </div>
 </div>
 
@@ -69,61 +67,64 @@
                         <p class="text-xs text-primary-500">Pending assignments</p>
                     </div>
                 </div>
-                <a href="{{ route('admin.reports.index') }}" class="text-xs text-secondary-400 hover:text-secondary-300">
+                <a href="<?php echo e(route('admin.reports.index')); ?>" class="text-xs text-secondary-400 hover:text-secondary-300">
                     View All <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
             
             <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1 urgent-reports-container">
-                @php
+                <?php
                     $urgentReports = $recent_reports->where('status', 'Pending')->take(5);
-                @endphp
+                ?>
                 
-                @forelse($urgentReports as $report)
-                <div class="urgent-report-card bg-primary-800/50 border border-primary-700 rounded-lg p-3 hover:bg-primary-700/50 transition" data-report-id="{{ $report->id }}">
+                <?php $__empty_1 = true; $__currentLoopData = $urgentReports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $report): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <div class="urgent-report-card bg-primary-800/50 border border-primary-700 rounded-lg p-3 hover:bg-primary-700/50 transition" data-report-id="<?php echo e($report->id); ?>">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1.5">
                                 <span class="px-2 py-0.5 text-xs rounded bg-accent-900 text-accent-300 font-medium">
-                                    {{ $report->emergency_type }}
+                                    <?php echo e($report->emergency_type); ?>
+
                                 </span>
-                                @if($report->status === 'Pending')
+                                <?php if($report->status === 'Pending'): ?>
                                     <span class="px-2 py-0.5 text-xs rounded bg-accent-400 text-primary-950 font-bold">
                                         NEW
                                     </span>
-                                @endif
+                                <?php endif; ?>
                             </div>
                             <p class="text-xs text-primary-200 mb-1 truncate">
-                                @php
+                                <?php
                                     $locationParts = explode(':', $report->location);
                                     $reversedLocation = array_reverse($locationParts);
                                     $formattedLocation = implode(': ', $reversedLocation);
-                                @endphp
-                                {{ Str::limit($formattedLocation, 45) }}
+                                ?>
+                                <?php echo e(Str::limit($formattedLocation, 45)); ?>
+
                             </p>
                             <p class="text-xs text-primary-500">
-                                {{ $report->citizen->full_name ?? 'Guest' }} • {{ $report->created_at ? $report->created_at->diffForHumans() : 'Just now' }}
+                                <?php echo e($report->citizen->full_name ?? 'Guest'); ?> • <?php echo e($report->created_at ? $report->created_at->diffForHumans() : 'Just now'); ?>
+
                             </p>
                         </div>
                         <div class="flex gap-1.5 flex-shrink-0">
-                            <a href="{{ route('admin.reports.assign-map', $report) }}" 
+                            <a href="<?php echo e(route('admin.reports.assign-map', $report)); ?>" 
                                class="inline-flex items-center px-3 py-1.5 bg-secondary-400 hover:bg-secondary-500 text-primary-950 rounded-lg transition font-medium text-xs">
                                 <i class="fas fa-users mr-1"></i>
                                 Assign
                             </a>
-                            <a href="{{ route('admin.reports.show', $report) }}" 
+                            <a href="<?php echo e(route('admin.reports.show', $report)); ?>" 
                                class="inline-flex items-center justify-center w-8 h-8 border border-primary-600 text-primary-300 hover:bg-primary-600 rounded-lg transition">
                                 <i class="fas fa-eye text-xs"></i>
                             </a>
                         </div>
                     </div>
                 </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="text-center py-8">
                     <i class="fas fa-check-circle text-3xl text-secondary-400 mb-2"></i>
                     <p class="text-sm text-primary-400">No urgent reports</p>
                 </div>
-                @endforelse
+                <?php endif; ?>
             </div>
         </div>
 
@@ -141,14 +142,14 @@
                             <i class="fas fa-circle-check text-secondary-400 text-sm"></i>
                             <span class="text-xs text-primary-200">Available</span>
                         </div>
-                        <span id="stat-available-teams" class="text-xl font-bold text-secondary-400 transition-all duration-300">{{ $stats['available_teams'] }}</span>
+                        <span id="stat-available-teams" class="text-xl font-bold text-secondary-400 transition-all duration-300"><?php echo e($stats['available_teams']); ?></span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-primary-700 rounded-lg">
                         <div class="flex items-center space-x-2">
                             <i class="fas fa-truck-medical text-accent-400 text-sm"></i>
                             <span class="text-xs text-primary-200">On Mission</span>
                         </div>
-                        <span class="text-xl font-bold text-accent-400 transition-all duration-300">{{ $stats['total_teams'] - $stats['available_teams'] }}</span>
+                        <span class="text-xl font-bold text-accent-400 transition-all duration-300"><?php echo e($stats['total_teams'] - $stats['available_teams']); ?></span>
                     </div>
                 </div>
             </div>
@@ -165,39 +166,21 @@
                             <i class="fas fa-users text-primary-400 text-sm"></i>
                             <span class="text-xs text-primary-200">Citizens</span>
                         </div>
-                        <span id="stat-total-citizens" class="text-sm font-semibold text-primary-100 transition-all duration-300">{{ $stats['total_citizens'] }}</span>
+                        <span id="stat-total-citizens" class="text-sm font-semibold text-primary-100 transition-all duration-300"><?php echo e($stats['total_citizens']); ?></span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <i class="fas fa-user-shield text-secondary-400 text-sm"></i>
                             <span class="text-xs text-primary-200">Rescuers</span>
                         </div>
-                        <span id="stat-total-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300">{{ $stats['total_rescuers'] }}</span>
+                        <span id="stat-total-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300"><?php echo e($stats['total_rescuers']); ?></span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <i class="fas fa-user-check text-secondary-400 text-sm"></i>
-                            <span class="text-xs text-primary-200">Verified Rescuers</span>
-                        </div>
-                        <span id="stat-verified-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300">{{ $stats['verified_rescuers'] }}</span>
-                    </div>
-                    @if($stats['pending_rescuers'] > 0)
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-user-clock text-accent-400 text-sm animate-pulse"></i>
-                            <span class="text-xs text-primary-200">Pending Approval</span>
-                        </div>
-                        <a href="{{ route('admin.users.index', ['verified' => 'pending']) }}" class="text-sm font-semibold text-accent-400 hover:text-accent-300 transition-all duration-300">
-                            {{ $stats['pending_rescuers'] }}
-                        </a>
-                    </div>
-                    @endif
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-heartbeat text-secondary-400 text-sm"></i>
                             <span class="text-xs text-primary-200">Rescuers Ready</span>
                         </div>
-                        <span id="stat-available-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300">{{ $stats['available_rescuers'] }}</span>
+                        <span id="stat-available-rescuers" class="text-sm font-semibold text-secondary-400 transition-all duration-300"><?php echo e($stats['available_rescuers']); ?></span>
                     </div>
                 </div>
             </div>
@@ -249,12 +232,12 @@
         <!-- Minimalist Breakdown -->
         <div class="mt-4 pt-4 border-t border-primary-700">
             <div class="space-y-2">
-                @foreach($emergency_types->take(4) as $type)
+                <?php $__currentLoopData = $emergency_types->take(4); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="flex items-center justify-between text-xs">
-                    <span class="text-primary-400 truncate">{{ Str::limit($type->emergency_type, 12) }}</span>
-                    <span class="font-semibold text-primary-200">{{ $type->count }}</span>
+                    <span class="text-primary-400 truncate"><?php echo e(Str::limit($type->emergency_type, 12)); ?></span>
+                    <span class="font-semibold text-primary-200"><?php echo e($type->count); ?></span>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </div>
@@ -286,59 +269,60 @@
                 </tr>
             </thead>
             <tbody id="reports-tbody" class="divide-y divide-primary-700">
-                @forelse($recent_reports as $index => $report)
-                <tr data-report-id="{{ $report->id }}" class="hover:bg-primary-700 transition {{ $index === 0 ? 'bg-primary-700' : '' }}">
+                <?php $__empty_1 = true; $__currentLoopData = $recent_reports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $report): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <tr data-report-id="<?php echo e($report->id); ?>" class="hover:bg-primary-700 transition <?php echo e($index === 0 ? 'bg-primary-700' : ''); ?>">
                     <td class="px-5 py-4 whitespace-nowrap">
                         <div class="flex items-center gap-2">
                             <span class="px-2 py-1 text-xs rounded-md bg-accent-900 text-accent-300 font-medium">
-                                {{ $report->emergency_type }}
+                                <?php echo e($report->emergency_type); ?>
+
                             </span>
-                            @if($index === 0)
+                            <?php if($index === 0): ?>
                                 <span class="px-2 py-1 text-xs rounded-md bg-secondary-400 text-primary-950 font-bold">
                                     NEW
                                 </span>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </td>
                     <td class="px-5 py-4">
-                        <span class="text-sm text-primary-200">{{ Str::limit($report->location, 35) }}</span>
+                        <span class="text-sm text-primary-200"><?php echo e(Str::limit($report->location, 35)); ?></span>
                     </td>
                     <td class="px-5 py-4">
-                        <span class="text-sm text-primary-200">{{ $report->citizen->full_name ?? 'Guest' }}</span>
+                        <span class="text-sm text-primary-200"><?php echo e($report->citizen->full_name ?? 'Guest'); ?></span>
                     </td>
                     <td class="px-5 py-4">
-                        @if($report->status === 'Pending')
+                        <?php if($report->status === 'Pending'): ?>
                             <span class="px-2 py-1 text-xs rounded-md bg-accent-900 text-accent-300 font-medium">Pending</span>
-                        @elseif($report->status === 'In Progress')
+                        <?php elseif($report->status === 'In Progress'): ?>
                             <span class="px-2 py-1 text-xs rounded-md bg-secondary-900 text-secondary-300 font-medium">In Progress</span>
-                        @else
+                        <?php else: ?>
                             <span class="px-2 py-1 text-xs rounded-md bg-primary-700 text-primary-300 font-medium">Completed</span>
-                        @endif
+                        <?php endif; ?>
                     </td>
                     <td class="px-5 py-4">
-                        <span class="text-xs text-primary-400">{{ $report->created_at ? $report->created_at->format('M d, Y H:i') : 'N/A' }}</span>
+                        <span class="text-xs text-primary-400"><?php echo e($report->created_at ? $report->created_at->format('M d, Y H:i') : 'N/A'); ?></span>
                     </td>
                     <td class="px-5 py-4">
-                        <a href="{{ route('admin.reports.show', $report) }}" class="text-secondary-400 hover:text-secondary-300 transition">
+                        <a href="<?php echo e(route('admin.reports.show', $report)); ?>" class="text-secondary-400 hover:text-secondary-300 transition">
                             <i class="fas fa-arrow-right text-sm"></i>
                         </a>
                     </td>
                 </tr>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr id="no-reports-row">
                     <td colspan="6" class="px-5 py-8 text-center">
                         <i class="fas fa-inbox text-3xl text-primary-700 mb-2"></i>
                         <p class="text-sm text-primary-500">No reports found</p>
                     </td>
                 </tr>
-                @endforelse
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script>
@@ -684,6 +668,8 @@
     // Fetch and add new report to table
     async function fetchAndAddReport(reportId) {
         try {
+            console.log('📥 Fetching report:', reportId);
+            
             // Fetch report data (without join to avoid RLS issues)
             const { data: report, error: reportError } = await window.supabaseClient
                 .from('emergency_reports')
@@ -696,6 +682,8 @@
                 throw reportError;
             }
 
+            console.log('✅ Report fetched:', report);
+
             // If there's a citizen_id, try to fetch the citizen name
             if (report.citizen_id) {
                 const { data: citizen, error: citizenError } = await window.supabaseClient
@@ -706,10 +694,13 @@
 
                 if (!citizenError && citizen) {
                     report.citizen = citizen;
+                    console.log('✅ Citizen name fetched:', citizen.full_name);
                 } else {
+                    console.log('⚠️ Could not fetch citizen name, using Guest');
                     report.citizen = null;
                 }
             } else {
+                console.log('ℹ️ No citizen_id, this is a guest report');
                 report.citizen = null;
             }
 
@@ -717,12 +708,16 @@
             addReportToTable(report);
         } catch (error) {
             console.error('❌ Error in fetchAndAddReport:', error);
+            // Even if fetch fails, still update stats
+            console.log('⚠️ Could not add report to table, but stats will be updated');
         }
     }
 
     // Add new report to urgent reports section
     async function addToUrgentReports(reportId) {
         try {
+            console.log('🚨 Adding to urgent reports:', reportId);
+            
             // Fetch report data
             const { data: report, error: reportError } = await window.supabaseClient
                 .from('emergency_reports')
@@ -770,6 +765,8 @@
                     card.style.backgroundColor = '';
                 }, 1000);
             }, 100);
+
+            console.log('✅ Added to urgent reports section');
         } catch (error) {
             console.error('❌ Error in addToUrgentReports:', error);
         }
@@ -916,7 +913,12 @@
     // Update existing report row
     function updateReportRow(report) {
         const row = document.querySelector(`tr[data-report-id="${report.id}"]`);
-        if (!row) return;
+        if (!row) {
+            console.log('⚠️ Row not found for report:', report.id);
+            return;
+        }
+
+        console.log('📝 Updating row for report:', report.id, 'Status:', report.status);
 
         // Use the same color classes as the blade template
         let statusClass = '';
@@ -943,16 +945,23 @@
             setTimeout(() => {
                 row.style.backgroundColor = '';
             }, 2000);
+            
+            console.log('✅ Row updated successfully');
+        } else {
+            console.error('❌ Status cell not found');
         }
     }
 
     // Update Urgent Reports section - Remove if status is not Pending
     function updateUrgentReportsSection(updatedReport, oldReport) {
+        console.log('🚨 Checking urgent section for report:', updatedReport.id, 'Status:', updatedReport.status);
+        
         // If status is not Pending, remove from urgent section
         if (updatedReport.status !== 'Pending') {
             const urgentCard = document.querySelector(`.urgent-report-card[data-report-id="${updatedReport.id}"]`);
             
             if (urgentCard) {
+                console.log('🗑️ Removing from urgent section (status:', updatedReport.status + ')');
                 urgentCard.style.opacity = '0';
                 urgentCard.style.transition = 'opacity 0.3s';
                 
@@ -978,6 +987,7 @@
 
     // Update all statistics
     async function updateAllStats() {
+        console.log('📊 Updating all statistics...');
         await Promise.all([
             updateReportStats(),
             updateUserStats(),
@@ -1004,6 +1014,8 @@
                 updateStatWithAnimation('stat-in-progress-reports', data.in_progress_reports);
                 updateStatWithAnimation('stat-completed-reports', data.resolved_reports);
             }
+
+            console.log('✅ Report stats updated');
         } catch (error) {
             console.error('❌ Error updating report stats:', error);
         }
@@ -1012,6 +1024,8 @@
     // Update user statistics using RPC function (bypasses RLS)
     async function updateUserStats() {
         try {
+            console.log('📊 Updating user statistics...');
+            
             // Call RPC function to get all user stats at once
             const { data, error } = await window.supabaseClient
                 .rpc('get_user_stats');
@@ -1022,11 +1036,18 @@
             }
 
             if (data) {
+                console.log('👥 Total users:', data.total_users);
+                console.log('👤 Citizens:', data.total_citizens);
+                console.log('🚒 Rescuers:', data.total_rescuers);
+                console.log('✅ Available rescuers:', data.available_rescuers);
+
                 updateStatWithAnimation('stat-total-users', data.total_users);
                 updateStatWithAnimation('stat-total-citizens', data.total_citizens);
                 updateStatWithAnimation('stat-total-rescuers', data.total_rescuers);
                 updateStatWithAnimation('stat-available-rescuers', data.available_rescuers);
             }
+
+            console.log('✅ User stats updated');
         } catch (error) {
             console.error('❌ Error updating user stats:', error);
         }
@@ -1048,6 +1069,8 @@
                 updateStatWithAnimation('stat-total-teams', data.total_teams);
                 updateStatWithAnimation('stat-available-teams', data.available_teams);
             }
+
+            console.log('✅ Team stats updated');
         } catch (error) {
             console.error('❌ Error updating team stats:', error);
         }
@@ -1076,6 +1099,8 @@
                     listEl.appendChild(div);
                 });
             }
+
+            console.log('✅ Emergency types updated');
         } catch (error) {
             console.error('❌ Error updating emergency types:', error);
         }
@@ -1105,4 +1130,6 @@
         }
     }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\mitch\Desktop\MDRRMORescueSite\resources\views/admin/dashboard.blade.php ENDPATH**/ ?>
