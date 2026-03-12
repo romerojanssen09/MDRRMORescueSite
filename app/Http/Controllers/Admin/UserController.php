@@ -61,7 +61,27 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email',
+                function ($attribute, $value, $fail) {
+                    $allowedDomains = ['@gmail.com', '@yahoo.com', '@mdrrmo.com'];
+                    $emailLower = strtolower(trim($value));
+                    $hasValidDomain = false;
+                    
+                    foreach ($allowedDomains as $domain) {
+                        if (str_ends_with($emailLower, $domain)) {
+                            $hasValidDomain = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$hasValidDomain) {
+                        $fail('Only @gmail.com, @yahoo.com, and @mdrrmo.com email addresses are allowed.');
+                    }
+                },
+            ],
             'phone' => 'required|string|regex:/^[0-9]{10}$/',
             'badge_number' => 'required|string|max:255',
             'specialization' => 'required|string|max:255',

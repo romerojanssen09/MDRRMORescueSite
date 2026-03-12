@@ -71,13 +71,13 @@
                            id="email"
                            value="{{ session('clear_form') ? '' : old('email') }}" 
                            class="input-field text-sm @error('email') border-accent-400 @enderror" 
-                           placeholder="rescuer@example.com" 
+                           placeholder="rescuer@gmail.com" 
                            required>
                     @error('email')
                         <p class="text-accent-400 text-xs mt-1">{{ $message }}</p>
                     @enderror
                     <p class="text-xs text-primary-500 mt-1">
-                        <i class="fas fa-mobile-alt mr-1"></i>Used for mobile app login
+                        <i class="fas fa-envelope mr-1"></i>Only @gmail.com, @yahoo.com, @mdrrmo.com
                     </p>
                     <p class="text-xs text-accent-400 mt-1 error-message hidden" id="email_error"></p>
                 </div>
@@ -243,12 +243,21 @@
         // Validate email
         const email = document.getElementById('email');
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const allowedDomains = ['@gmail.com', '@yahoo.com', '@mdrrmo.com'];
+        
         if (!email.value.trim()) {
             showError('email', 'Email is required');
             isValid = false;
         } else if (!emailRegex.test(email.value)) {
             showError('email', 'Please enter a valid email address');
             isValid = false;
+        } else {
+            const emailLower = email.value.toLowerCase().trim();
+            const hasValidDomain = allowedDomains.some(domain => emailLower.endsWith(domain));
+            if (!hasValidDomain) {
+                showError('email', 'Only @gmail.com, @yahoo.com, and @mdrrmo.com emails are allowed');
+                isValid = false;
+            }
         }
         
         // Validate phone (required, must be 10 digits)
