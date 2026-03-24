@@ -277,14 +277,6 @@
                 <a href="{{ route('admin.login') }}" class="btn-accent inline-block w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-xl hover:scale-105 transition-transform">
                     <i class="fas fa-sign-in-alt mr-2"></i>Login to Admin Panel
                 </a>
-                <div class="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-primary-700/30">
-                    <p class="text-xs text-primary-500 mb-2">Default Credentials</p>
-                    <p class="text-xs sm:text-sm break-all">
-                        <span class="text-secondary-400 font-mono">admin@mdrrmo.com</span>
-                        <span class="text-primary-600 mx-2">•</span>
-                        <span class="text-secondary-400 font-mono">admin123</span>
-                    </p>
-                </div>
             </div>
         </div>
     </section>
