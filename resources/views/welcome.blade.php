@@ -157,7 +157,7 @@
                     </div>
                 </a>
                 <p class="text-xs text-primary-500">
-                    <i class="fas fa-download mr-1"></i> APK • 186 MB • v1.6.0
+                    <i class="fas fa-download mr-1"></i> APK • 195 MB • v1.6.0
                 </p>
             </div>
             
