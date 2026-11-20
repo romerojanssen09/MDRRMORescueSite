@@ -356,10 +356,19 @@
             attributionControl: false
         }).setView(defaultCenter, 12);
 
-        // Dark theme tiles
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(map);
+        // Dark theme tiles via Mapbox (fallback to OpenStreetMap if token missing)
+        const mapboxToken = @json(config('services.mapbox.access_token'));
+        if (mapboxToken) {
+            L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
+                tileSize: 512,
+                zoomOffset: -1,
+                maxZoom: 19
+            }).addTo(map);
+        } else {
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            }).addTo(map);
+        }
 
         // Load incident markers
         loadIncidentMarkers();
