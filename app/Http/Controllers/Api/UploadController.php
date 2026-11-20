@@ -29,19 +29,34 @@ class UploadController extends Controller
 
         $request->validate([
             'file' => "required|file|mimes:jpeg,jpg,png,webp|max:{$maxKb}",
+            'filename' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9_-]+(?:\.(?:jpg|jpeg|png|webp))?$/i'],
         ]);
 
         $file = $request->file('file');
-        $id = (string) Str::uuid();
         $ext = strtolower($file->extension() ?: 'png');
-        $storedPath = Storage::disk('uploads')->putFileAs($bucket, $file, "{$id}.{$ext}");
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        $id = $request->filled('filename')
+            ? pathinfo((string) $request->input('filename'), PATHINFO_FILENAME)
+            : (string) Str::uuid();
+
+        $filename = "{$id}.{$ext}";
+        $storedPath = Storage::disk('uploads')->putFileAs($bucket, $file, $filename);
+
+        $relativeUrl = "/uploads/{$bucket}/{$id}";
+        $publicUrl = (app()->environment('production') && config('app.url') && in_array($request->getHost(), ['localhost', '127.0.0.1', '0.0.0.0'], true))
+            ? rtrim((string) config('app.url'), '/').$relativeUrl
+            : url($relativeUrl);
 
         return response()->json([
             'success' => true,
             'bucket' => $bucket,
             'id' => $id,
+            'filename' => $filename,
             'path' => $storedPath,
-            'url' => url("/uploads/{$bucket}/{$id}"),
+            'url' => $publicUrl,
         ], 201);
     }
 

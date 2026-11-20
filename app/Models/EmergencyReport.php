@@ -23,6 +23,7 @@ class EmergencyReport extends Model
         'longitude',
         'status',
         'photo_url',
+        'image_url',
         'show_name',
     ];
 
