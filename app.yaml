@@ -22,7 +22,12 @@ env:
   SESSION_DRIVER: cookie
   CACHE_STORE: array
   QUEUE_CONNECTION: sync
-  FILESYSTEM_DISK: local
+  FILESYSTEM_DISK: uploads
+  UPLOADS_PATH: /data/uploads
+
+volumes:
+  - name: uploads
+    mount: /data/uploads
 
 capabilities:
   # Wasmer Edge InstaBoot: pre-warm PHP OpCache + Laravel framework into snapshots

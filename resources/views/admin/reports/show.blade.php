@@ -51,10 +51,13 @@
                 </div>
             </div>
 
-            @if($report->photo_url)
+            @php
+                $reportPhoto = $report->photo_url ?: $report->image_url;
+            @endphp
+            @if($reportPhoto)
             <div class="mt-4">
                 <label class="text-primary-400 text-xs block mb-2">Photo</label>
-                <img src="{{ $report->photo_url }}" alt="Report Photo" class="mt-2 rounded-lg max-w-md border border-primary-700">
+                <img src="{{ $reportPhoto }}" alt="Report Photo" class="mt-2 rounded-lg max-w-md border border-primary-700">
             </div>
             @endif
         </div>

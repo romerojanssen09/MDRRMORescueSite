@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\UploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -91,3 +92,10 @@ Route::get('/health/db', function () {
         ],
     ]);
 });
+
+// Wasmer persistent volume uploads (emergency-images, avatars)
+Route::post('/uploads/{bucket}', [UploadController::class, 'store'])
+    ->whereIn('bucket', ['emergency-images', 'avatars']);
+Route::delete('/uploads/{bucket}/{path}', [UploadController::class, 'destroy'])
+    ->whereIn('bucket', ['emergency-images', 'avatars'])
+    ->where('path', '.*');

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmergencyReportController;
 use App\Http\Controllers\Admin\RescueTeamController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Serve files stored on Wasmer persistent uploads volume (/data/uploads)
+Route::get('/uploads/{bucket}/{path}', [UploadController::class, 'show'])
+    ->whereIn('bucket', ['emergency-images', 'avatars'])
+    ->where('path', '.*')
+    ->name('uploads.show');
 
 // Wasmer Edge InstaBoot warm-up endpoint
 Route::get('/_bootstrap', function (Request $request) {
