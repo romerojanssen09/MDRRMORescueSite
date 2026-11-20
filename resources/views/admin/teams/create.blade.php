@@ -214,7 +214,7 @@ document.getElementById('teamForm').addEventListener('submit', function() {
     btnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
 });
 
-mapboxgl.accessToken = '{{ env('MAPBOX_ACCESS_TOKEN') }}';
+mapboxgl.accessToken = '{{ config('services.mapbox.access_token') }}';
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/dark-v11',

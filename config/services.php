@@ -41,4 +41,8 @@ return [
         'service_key' => env('SUPABASE_SERVICE_KEY'),
     ],
 
+    'mapbox' => [
+        'access_token' => env('MAPBOX_ACCESS_TOKEN'),
+    ],
+
 ];

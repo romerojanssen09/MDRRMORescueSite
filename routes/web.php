@@ -5,10 +5,19 @@ use App\Http\Controllers\Admin\EmergencyReportController;
 use App\Http\Controllers\Admin\RescueTeamController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Wasmer Edge InstaBoot warm-up endpoint
+Route::get('/_bootstrap', function (Request $request) {
+    return response()->json([
+        'status' => 'bootstrapped',
+        'instaboot' => $request->hasHeader('x-edge-instaboot'),
+    ]);
 });
 
 // Auth Routes

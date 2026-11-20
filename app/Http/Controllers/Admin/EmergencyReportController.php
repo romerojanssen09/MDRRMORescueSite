@@ -62,55 +62,62 @@ class EmergencyReportController extends Controller
     public function assignMap(EmergencyReport $report)
     {
         $report->load('citizen');
-        
-        // Get all teams with location data (Available and On Mission)
+
+        $reportLat = (float) ($report->latitude ?? 10.465);
+        $reportLng = (float) ($report->longitude ?? 122.826);
+        $mapboxToken = config('services.mapbox.access_token');
+
+        // Query teams with PostGIS ellipsoidal distance (meters -> km) ordered by availability then proximity
         $teams = \App\Models\RescueTeam::with('members')
+            ->select('rescue_teams.*')
+            ->selectRaw(
+                'CASE WHEN location_point IS NOT NULL THEN ROUND((ST_Distance(location_point, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) / 1000.0)::numeric, 2) ELSE NULL END AS postgis_distance_km',
+                [$reportLng, $reportLat]
+            )
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->orderByRaw("CASE WHEN status = 'Available' THEN 0 ELSE 1 END")
+            ->orderByRaw('ST_Distance(location_point, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) ASC NULLS LAST', [$reportLng, $reportLat])
             ->get();
-        
-        // Calculate distance for each team using routing API
-        $reportLat = $report->latitude ?? 10.465;
-        $reportLng = $report->longitude ?? 122.826;
-        $mapboxToken = env('MAPBOX_ACCESS_TOKEN');
-        
-        $teams = $teams->map(function($team) use ($reportLat, $reportLng, $mapboxToken) {
-            // Try to get route distance from Mapbox Directions API
+
+        $teams = $teams->map(function ($team) use ($reportLat, $reportLng, $mapboxToken) {
             if ($mapboxToken) {
                 try {
                     $url = "https://api.mapbox.com/directions/v5/mapbox/driving/{$team->longitude},{$team->latitude};{$reportLng},{$reportLat}?access_token={$mapboxToken}&geometries=geojson";
-                    
+
                     $response = @file_get_contents($url);
                     if ($response) {
                         $data = json_decode($response, true);
-                        
+
                         if (isset($data['routes'][0]['distance'])) {
-                            // Distance in meters, convert to km
                             $team->distance = round($data['routes'][0]['distance'] / 1000, 2);
-                            $team->duration = isset($data['routes'][0]['duration']) ? round($data['routes'][0]['duration'] / 60) : null; // minutes
-                            $team->route_type = 'driving'; // Indicates this is actual route distance
+                            $team->duration = isset($data['routes'][0]['duration']) ? round($data['routes'][0]['duration'] / 60) : null;
+                            $team->route_type = 'driving';
+
                             return $team;
                         }
                     }
                 } catch (\Exception $e) {
-                    // Fallback to straight-line distance on error
+                    // Fallback to PostGIS / Haversine distance below
                 }
             }
-            
-            // Fallback to straight-line distance
-            $team->distance = $this->calculateDistance($reportLat, $reportLng, $team->latitude, $team->longitude);
+
+            $team->distance = $team->postgis_distance_km !== null
+                ? (float) $team->postgis_distance_km
+                : $this->calculateDistance($reportLat, $reportLng, $team->latitude, $team->longitude);
             $team->duration = null;
-            $team->route_type = 'straight';
+            $team->route_type = $team->postgis_distance_km !== null ? 'postgis' : 'straight';
+
             return $team;
         });
-        
+
         // Sort teams: Available first (by distance), then Deployed (by distance)
-        $teams = $teams->sortBy(function($team) {
-            // Available teams get priority (0-999), Deployed teams go to bottom (1000+)
+        $teams = $teams->sortBy(function ($team) {
             $statusPriority = $team->status === 'Available' ? 0 : 1000;
+
             return $statusPriority + $team->distance;
         })->values();
-            
+
         return view('admin.reports.assign-map', compact('report', 'teams'));
     }
     

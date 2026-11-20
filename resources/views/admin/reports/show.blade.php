@@ -227,7 +227,7 @@
 </style>
 
 <script>
-mapboxgl.accessToken = '{{ env('MAPBOX_ACCESS_TOKEN') }}';
+mapboxgl.accessToken = '{{ config('services.mapbox.access_token') }}';
 
 const reportLat = {{ $report->latitude }};
 const reportLng = {{ $report->longitude }};
