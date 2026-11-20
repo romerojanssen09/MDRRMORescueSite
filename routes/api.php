@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\MobileAuthController;
+use App\Http\Controllers\Api\MobileLocationController;
+use App\Http\Controllers\Api\MobileMessageController;
+use App\Http\Controllers\Api\MobileNotificationController;
+use App\Http\Controllers\Api\MobileReportController;
 use App\Http\Controllers\Api\UploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -131,3 +136,44 @@ Route::post('/uploads/{bucket}', [UploadController::class, 'store'])
 Route::delete('/uploads/{bucket}/{path}', [UploadController::class, 'destroy'])
     ->whereIn('bucket', ['emergency-images', 'avatars'])
     ->where('path', '.*');
+
+// Mobile App API (Neon PostgreSQL + PostGIS backend)
+Route::prefix('mobile')->group(function () {
+    // Auth & Profile & OTP
+    Route::post('/auth/register', [MobileAuthController::class, 'register']);
+    Route::post('/auth/login', [MobileAuthController::class, 'login']);
+    Route::get('/auth/me', [MobileAuthController::class, 'me']);
+    Route::patch('/auth/profile', [MobileAuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [MobileAuthController::class, 'changePassword']);
+    Route::post('/auth/otp/send', [MobileAuthController::class, 'sendOtp']);
+    Route::post('/auth/otp/verify', [MobileAuthController::class, 'verifyOtp']);
+    Route::post('/auth/reset-password', [MobileAuthController::class, 'resetPassword']);
+
+    // Emergency Reports & Dispatch
+    Route::get('/reports', [MobileReportController::class, 'index']);
+    Route::get('/reports/daily-limit', [MobileReportController::class, 'dailyLimit']);
+    Route::get('/reports/{id}', [MobileReportController::class, 'show']);
+    Route::post('/reports', [MobileReportController::class, 'store']);
+    Route::post('/reports/{id}/take-action', [MobileReportController::class, 'takeAction']);
+    Route::post('/reports/{id}/complete', [MobileReportController::class, 'complete']);
+
+    // Live Rescuer GPS Locations
+    Route::post('/locations', [MobileLocationController::class, 'store']);
+    Route::get('/locations/report/{reportId}', [MobileLocationController::class, 'forReport']);
+    Route::post('/locations/stop', [MobileLocationController::class, 'stop']);
+
+    // Report Chat & Unread Counts
+    Route::get('/messages/conversations', [MobileMessageController::class, 'conversations']);
+    Route::get('/messages/unread-summary', [MobileMessageController::class, 'unreadSummary']);
+    Route::get('/messages/{reportId}', [MobileMessageController::class, 'index']);
+    Route::post('/messages/{reportId}', [MobileMessageController::class, 'store']);
+    Route::post('/messages/{reportId}/read', [MobileMessageController::class, 'markRead']);
+
+    // Push Tokens & Notifications
+    Route::post('/push-tokens', [MobileNotificationController::class, 'savePushToken']);
+    Route::delete('/push-tokens', [MobileNotificationController::class, 'deletePushToken']);
+    Route::get('/notifications', [MobileNotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [MobileNotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [MobileNotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}', [MobileNotificationController::class, 'destroy']);
+});
