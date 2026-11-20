@@ -76,21 +76,53 @@ Route::get('/health', function () {
 
 // Live Neon PostgreSQL + PostGIS connectivity check
 Route::get('/health/db', function () {
-    $pgVersion = DB::selectOne('SELECT version() AS version')->version ?? null;
-    $postgisVersion = DB::selectOne('SELECT PostGIS_Version() AS version')->version ?? null;
+    try {
+        $pgVersion = DB::selectOne('SELECT version() AS version')->version ?? null;
+        $postgisVersion = DB::selectOne('SELECT PostGIS_Version() AS version')->version ?? null;
+
+        return response()->json([
+            'status' => 'ok',
+            'database' => DB::connection()->getDatabaseName(),
+            'postgres_version' => $pgVersion,
+            'postgis_version' => $postgisVersion,
+            'tables' => [
+                'specializations' => DB::table('specializations')->count(),
+                'rescue_teams' => DB::table('rescue_teams')->count(),
+                'users' => DB::table('users')->count(),
+                'emergency_reports' => DB::table('emergency_reports')->count(),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        $url = (string) (config('database.connections.pgsql.url') ?: '');
+        $configuredHost = ($url !== '' ? parse_url($url, PHP_URL_HOST) : null) ?: config('database.connections.pgsql.host');
+        $sanitizedMessage = preg_replace('#://[^@\s]+@#', '://***:***@', $e->getMessage()) ?? $e->getMessage();
+
+        return response()->json([
+            'status' => 'error',
+            'default_connection' => config('database.default'),
+            'pdo_drivers' => \PDO::getAvailableDrivers(),
+            'has_database_url' => ! empty(env('DATABASE_URL')),
+            'has_db_url' => ! empty(env('DB_URL')),
+            'configured_host' => $configuredHost,
+            'error_class' => get_class($e),
+            'error' => $sanitizedMessage,
+        ], 503);
+    }
+});
+
+// Persistent uploads volume health check
+Route::get('/health/storage', function () {
+    $root = (string) config('filesystems.disks.uploads.root');
+    $exists = is_dir($root);
+    $writable = $exists ? is_writable($root) : is_writable(dirname($root));
 
     return response()->json([
-        'status' => 'ok',
-        'database' => DB::connection()->getDatabaseName(),
-        'postgres_version' => $pgVersion,
-        'postgis_version' => $postgisVersion,
-        'tables' => [
-            'specializations' => DB::table('specializations')->count(),
-            'rescue_teams' => DB::table('rescue_teams')->count(),
-            'users' => DB::table('users')->count(),
-            'emergency_reports' => DB::table('emergency_reports')->count(),
-        ],
-    ]);
+        'status' => $writable ? 'ok' : 'error',
+        'default_disk' => config('filesystems.default'),
+        'uploads_root' => $root,
+        'dir_exists' => $exists,
+        'writable' => $writable,
+    ], $writable ? 200 : 503);
 });
 
 // Wasmer persistent volume uploads (emergency-images, avatars)

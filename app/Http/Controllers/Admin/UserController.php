@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -92,109 +93,119 @@ class UserController extends Controller
         ]);
 
         try {
+            $hashedPassword = Hash::make($validated['password']);
             $supabaseUrl = config('services.supabase.url');
             $supabaseAnonKey = config('services.supabase.anon_key');
-            
-            \Log::info('Creating user via Supabase Auth API (mobile app pattern)', [
-                'email' => $validated['email'],
-            ]);
-            
-            if (!$supabaseUrl || !$supabaseAnonKey) {
-                throw new \Exception('Supabase configuration missing');
-            }
-            
-            // Use the same pattern as mobile app: supabase.auth.signUp()
-            // This calls Supabase Auth API directly
-            $response = Http::timeout(30)->withHeaders([
-                'apikey' => $supabaseAnonKey,
-                'Content-Type' => 'application/json',
-            ])->post("{$supabaseUrl}/auth/v1/signup", [
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'data' => [
-                    'full_name' => $validated['full_name'],
-                    'phone' => '+63' . $validated['phone'], // Add +63 prefix
-                    'role' => 'rescuer',
-                    'badge_number' => $validated['badge_number'],
-                    'specialization' => $validated['specialization'],
-                ]
-            ]);
+            $userId = null;
 
-            \Log::info('Supabase Auth Response', [
-                'status' => $response->status(),
-                'body' => $response->json(),
-            ]);
+            if ($supabaseUrl && $supabaseAnonKey) {
+                \Log::info('Creating user via Supabase Auth API (mobile app pattern)', [
+                    'email' => $validated['email'],
+                ]);
 
-            if ($response->successful()) {
-                $result = $response->json();
-                $userId = $result['user']['id'] ?? null;
-                
-                if (!$userId) {
-                    throw new \Exception('User ID not returned from Supabase');
-                }
-                
-                // Check if user already exists in public.users (might be created by trigger)
-                $existingUser = DB::table('users')->where('id', $userId)->first();
-                
-                if (!$existingUser) {
-                    // Create the user in public.users table only if it doesn't exist
-                    // Admin-created rescuers are auto-verified
-                    DB::table('users')->insert([
-                        'id' => $userId,
-                        'email' => $validated['email'],
+                // Use the same pattern as mobile app: supabase.auth.signUp()
+                $response = Http::timeout(30)->withHeaders([
+                    'apikey' => $supabaseAnonKey,
+                    'Content-Type' => 'application/json',
+                ])->post("{$supabaseUrl}/auth/v1/signup", [
+                    'email' => $validated['email'],
+                    'password' => $validated['password'],
+                    'data' => [
                         'full_name' => $validated['full_name'],
                         'phone' => '+63' . $validated['phone'],
                         'role' => 'rescuer',
-                        'is_active' => true,
-                        'is_verified' => true, // Auto-verify admin-created rescuers
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    
-                    // Create rescuer profile
-                    DB::table('rescuer_profiles')->insert([
-                        'user_id' => $userId,
                         'badge_number' => $validated['badge_number'],
                         'specialization' => $validated['specialization'],
-                        'status' => 'available',
-                        'created_at' => now(),
+                    ]
+                ]);
+
+                \Log::info('Supabase Auth Response', [
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+
+                if (! $response->successful()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    $errorMessage = $errorBody['msg'] ?? $errorBody['message'] ?? $errorBody['error_description'] ?? 'Failed to create user';
+
+                    \Log::error('Supabase Auth Error', [
+                        'status' => $statusCode,
+                        'body' => $errorBody,
+                        'email' => $validated['email'],
+                    ]);
+
+                    if (str_contains($errorMessage, 'already') || str_contains($errorMessage, 'registered')) {
+                        $errorMessage = 'This email address is already registered. Please use a different email.';
+                    }
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', $errorMessage);
+                }
+
+                $result = $response->json();
+                $userId = $result['user']['id'] ?? null;
+
+                if (! $userId) {
+                    throw new \Exception('User ID not returned from Supabase');
+                }
+            } else {
+                $userId = (string) Str::uuid();
+            }
+
+            // Check if user already exists in public.users (might be created by trigger)
+            $existingUser = DB::table('users')->where('id', $userId)->first();
+
+            if (!$existingUser) {
+                // Create the user in public.users table only if it doesn't exist
+                // Admin-created rescuers are auto-verified
+                DB::table('users')->insert([
+                    'id' => $userId,
+                    'email' => $validated['email'],
+                    'full_name' => $validated['full_name'],
+                    'phone' => '+63' . $validated['phone'],
+                    'role' => 'rescuer',
+                    'encrypted_password' => $hashedPassword,
+                    'email_verified_at' => now(),
+                    'is_active' => true,
+                    'is_verified' => true, // Auto-verify admin-created rescuers
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Create rescuer profile
+                DB::table('rescuer_profiles')->insert([
+                    'user_id' => $userId,
+                    'badge_number' => $validated['badge_number'],
+                    'specialization' => $validated['specialization'],
+                    'status' => 'available',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('users')
+                    ->where('id', $userId)
+                    ->whereNull('encrypted_password')
+                    ->update([
+                        'encrypted_password' => $hashedPassword,
                         'updated_at' => now(),
                     ]);
-                } else {
-                    \Log::info('User already exists in public.users (created by trigger)', [
-                        'user_id' => $userId
-                    ]);
-                }
-                
-                \Log::info('User created successfully', [
-                    'email' => $validated['email'],
+
+                \Log::info('User already exists in public.users (created by trigger)', [
                     'user_id' => $userId
                 ]);
-                
-                // Redirect back without old input to ensure form is cleared
-                return redirect()->route('admin.users.create')
-                    ->with('success', 'Rescuer created successfully! You can create another one.')
-                    ->with('clear_form', true);
-            } else {
-                $statusCode = $response->status();
-                $errorBody = $response->json();
-                $errorMessage = $errorBody['msg'] ?? $errorBody['message'] ?? $errorBody['error_description'] ?? 'Failed to create user';
-                
-                \Log::error('Supabase Auth Error', [
-                    'status' => $statusCode,
-                    'body' => $errorBody,
-                    'email' => $validated['email'],
-                ]);
-                
-                // Make error message user-friendly
-                if (str_contains($errorMessage, 'already') || str_contains($errorMessage, 'registered')) {
-                    $errorMessage = 'This email address is already registered. Please use a different email.';
-                }
-                
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', $errorMessage);
             }
+
+            \Log::info('User created successfully', [
+                'email' => $validated['email'],
+                'user_id' => $userId
+            ]);
+
+            // Redirect back without old input to ensure form is cleared
+            return redirect()->route('admin.users.create')
+                ->with('success', 'Rescuer created successfully! You can create another one.')
+                ->with('clear_form', true);
                 
         } catch (\Exception $e) {
             \Log::error('Failed to create user', [
@@ -291,11 +302,10 @@ class UserController extends Controller
             'phone.regex' => 'Phone number must be exactly 11 digits.',
         ]);
 
-        if (!empty($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        } else {
-            unset($validated['password']);
+        if (! empty($validated['password'])) {
+            $validated['encrypted_password'] = Hash::make($validated['password']);
         }
+        unset($validated['password']);
 
         $user->update($validated);
 

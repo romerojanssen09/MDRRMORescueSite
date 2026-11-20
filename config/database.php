@@ -85,7 +85,7 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL', env('DATABASE_URL')),
+            'url' => env('DB_URL') ?: env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', env('DB_NAME', 'neondb')),
@@ -95,12 +95,12 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'require'),
+            'sslmode' => env('DB_SSLMODE') ?: 'require',
         ],
 
         'pgsql_direct' => [
             'driver' => 'pgsql',
-            'url' => env('DATABASE_URL_UNPOOLED', env('DB_URL', env('DATABASE_URL'))),
+            'url' => env('DATABASE_URL_UNPOOLED') ?: (env('DB_URL') ?: env('DATABASE_URL')),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', env('DB_NAME', 'neondb')),
@@ -110,7 +110,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'require'),
+            'sslmode' => env('DB_SSLMODE') ?: 'require',
         ],
 
         'sqlsrv' => [
