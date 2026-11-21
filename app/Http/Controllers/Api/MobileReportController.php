@@ -224,47 +224,32 @@ class MobileReportController extends Controller
         $rescuer = User::findOrFail($validated['rescuer_id']);
         $mode = $validated['mode'] ?? ($rescuer->rescue_team_id ? 'team' : 'individual');
 
-        DB::transaction(function () use ($report, $rescuer, $mode) {
-            if ($mode === 'team' && $rescuer->rescue_team_id) {
-                $report->update([
-                    'assigned_team_id' => $rescuer->rescue_team_id,
-                    'assigned_rescuer_id' => $rescuer->id,
-                    'status' => 'In Progress',
-                ]);
+        if ($mode === 'team' && $rescuer->rescue_team_id) {
+            $report->update([
+                'assigned_team_id' => $rescuer->rescue_team_id,
+                'assigned_rescuer_id' => $rescuer->id,
+                'status' => 'In Progress',
+            ]);
 
-                RescueTeam::where('id', $rescuer->rescue_team_id)->update([
-                    'status' => 'On Mission',
-                    'updated_at' => now(),
-                ]);
+            DB::table('rescue_operations')->insert([
+                'id' => (string) Str::uuid(),
+                'emergency_report_id' => $report->id,
+                'rescue_team_id' => $rescuer->rescue_team_id,
+                'status' => 'Assigned',
+                'started_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $report->update([
+                'assigned_rescuer_id' => $rescuer->id,
+                'status' => 'In Progress',
+            ]);
 
-                DB::table('rescue_operations')->insert([
-                    'id' => (string) Str::uuid(),
-                    'emergency_report_id' => $report->id,
-                    'rescue_team_id' => $rescuer->rescue_team_id,
-                    'status' => 'Assigned',
-                    'started_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                User::where('rescue_team_id', $rescuer->rescue_team_id)
-                    ->pluck('id')
-                    ->each(function ($memberId) {
-                        DB::table('rescuer_profiles')
-                            ->where('user_id', $memberId)
-                            ->update(['status' => 'on_duty', 'updated_at' => now()]);
-                    });
-            } else {
-                $report->update([
-                    'assigned_rescuer_id' => $rescuer->id,
-                    'status' => 'In Progress',
-                ]);
-
-                DB::table('rescuer_profiles')
-                    ->where('user_id', $rescuer->id)
-                    ->update(['status' => 'on_duty', 'updated_at' => now()]);
-            }
-        });
+            DB::table('rescuer_profiles')
+                ->where('user_id', $rescuer->id)
+                ->update(['status' => 'on_duty', 'updated_at' => now()]);
+        }
 
         $freshReport = EmergencyReport::with([
             'citizen:id,full_name,phone,email',
@@ -312,40 +297,25 @@ class MobileReportController extends Controller
             ], 403);
         }
 
-        DB::transaction(function () use ($report, $rescuer) {
-            $report->update(['status' => 'Completed']);
+        $report->update(['status' => 'Completed']);
 
-            if ($report->assigned_team_id) {
-                RescueTeam::where('id', $report->assigned_team_id)->update([
-                    'status' => 'Available',
+        if ($report->assigned_team_id) {
+            DB::table('rescue_operations')
+                ->where('emergency_report_id', $report->id)
+                ->update([
+                    'status' => 'Completed',
+                    'completed_at' => now(),
                     'updated_at' => now(),
                 ]);
+        } else {
+            DB::table('rescuer_profiles')
+                ->where('user_id', $rescuer->id)
+                ->update(['status' => 'available', 'updated_at' => now()]);
+        }
 
-                DB::table('rescue_operations')
-                    ->where('emergency_report_id', $report->id)
-                    ->update([
-                        'status' => 'Completed',
-                        'completed_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                User::where('rescue_team_id', $report->assigned_team_id)
-                    ->pluck('id')
-                    ->each(function ($memberId) {
-                        DB::table('rescuer_profiles')
-                            ->where('user_id', $memberId)
-                            ->update(['status' => 'available', 'updated_at' => now()]);
-                    });
-            } else {
-                DB::table('rescuer_profiles')
-                    ->where('user_id', $rescuer->id)
-                    ->update(['status' => 'available', 'updated_at' => now()]);
-            }
-
-            DB::table('rescuer_locations')
-                ->where('report_id', $report->id)
-                ->update(['is_active' => false, 'updated_at' => now()]);
-        });
+        DB::table('rescuer_locations')
+            ->where('report_id', $report->id)
+            ->update(['is_active' => false, 'updated_at' => now()]);
 
         $this->pushService->notifyReportCompleted($report, $rescuer);
 
