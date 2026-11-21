@@ -96,9 +96,6 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE') ?: 'require',
-            'options' => [
-                \PDO::ATTR_EMULATE_PREPARES => true,
-            ],
         ],
 
         'pgsql_direct' => [
@@ -114,9 +111,6 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE') ?: 'require',
-            'options' => [
-                \PDO::ATTR_EMULATE_PREPARES => true,
-            ],
         ],
 
         'sqlsrv' => [
