@@ -24,6 +24,8 @@ class RescueTeam extends Model
     ];
 
     protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
         'members_count' => 'integer',
     ];
 

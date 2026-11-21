@@ -28,8 +28,8 @@ class EmergencyReport extends Model
     ];
 
     protected $casts = [
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'show_name' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
