@@ -287,17 +287,18 @@ class MobileReportController extends Controller
         $report = EmergencyReport::findOrFail($id);
         $rescuer = User::findOrFail($validated['rescuer_id']);
 
-        $isAssigned = $report->assigned_rescuer_id === $rescuer->id
-            || ($report->assigned_team_id && $rescuer->rescue_team_id === $report->assigned_team_id);
-
-        if (! $isAssigned && $rescuer->role !== 'admin') {
+        if (! in_array($rescuer->role, ['rescuer', 'admin'])) {
             return response()->json([
                 'success' => false,
-                'error' => 'You are not assigned to this report.',
+                'error' => 'Only rescuers and administrators can complete reports.',
             ], 403);
         }
 
-        $report->update(['status' => 'Completed']);
+        $report->status = 'Completed';
+        if (! $report->assigned_rescuer_id) {
+            $report->assigned_rescuer_id = $rescuer->id;
+        }
+        $report->save();
 
         if ($report->assigned_team_id) {
             DB::table('rescue_operations')

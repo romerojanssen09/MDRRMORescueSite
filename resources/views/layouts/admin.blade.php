@@ -7,7 +7,6 @@
     <title>@yield('title', 'MDRRMO Admin Panel')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .realtime-badge {
@@ -177,61 +176,24 @@
             });
         @endif
 
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
-        let channels = [];
         let notificationPermission = false;
 
         // Request browser notification permission
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().then(permission => {
                 notificationPermission = permission === 'granted';
-                console.log('🔔 Notification permission:', permission);
             });
         } else if ('Notification' in window) {
             notificationPermission = Notification.permission === 'granted';
         }
 
-        // Initialize Supabase with reconnection logic
-        function initializeSupabase() {
-            if (typeof window.supabase === 'undefined') {
-                console.error('❌ Supabase library not loaded!');
-                updateRealtimeStatus(false);
-                setTimeout(initializeSupabase, 5000);
-                return;
-            }
-
-            const supabaseUrl = '{{ config('services.supabase.url') }}';
-            const supabaseKey = '{{ config('services.supabase.anon_key') }}';
-            
+        // System Heartbeat / Connection check
+        async function checkConnection() {
             try {
-                window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
-                    realtime: {
-                        params: {
-                            eventsPerSecond: 10
-                        }
-                    }
-                });
-                console.log('✅ Supabase client initialized');
-                reconnectAttempts = 0;
-                updateRealtimeStatus(true);
+                const res = await fetch('/api/mobile/reports?limit=1', { cache: 'no-store' });
+                updateRealtimeStatus(res.ok);
             } catch (error) {
-                console.error('❌ Error initializing Supabase:', error);
                 updateRealtimeStatus(false);
-                handleReconnect();
-            }
-        }
-
-        // Handle reconnection with exponential backoff
-        function handleReconnect() {
-            if (reconnectAttempts < maxReconnectAttempts) {
-                reconnectAttempts++;
-                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                console.log(`🔄 Reconnecting in ${delay/1000}s (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
-                setTimeout(initializeSupabase, delay);
-            } else {
-                console.error('❌ Max reconnection attempts reached');
-                showNotification('Connection lost. Please refresh the page.', 'error');
             }
         }
 
@@ -288,7 +250,6 @@
                         requireInteraction: true
                     });
                     
-                    // Play notification sound
                     const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8bllHAU2jdXvzn0pBSh+zPDajzsKElyx6OyrWBQLSKDf8sFuJAUuhM/z24k2CBhku+zooVARC0yl4fG5ZRwFNo3V7859KQUofsz');
                     audio.volume = 0.3;
                     audio.play().catch(e => console.log('Audio play failed:', e));
@@ -298,16 +259,10 @@
             }
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', initializeSupabase);
-
-        // Cleanup channels on page unload
-        window.addEventListener('beforeunload', () => {
-            channels.forEach(channel => {
-                try {
-                    window.supabaseClient.removeChannel(channel);
-                } catch (e) {}
-            });
+        // Initialize on page load and poll heartbeat
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            setInterval(checkConnection, 15000);
         });
     </script>
     @stack('scripts')

@@ -54,12 +54,28 @@
             @php
                 $reportPhoto = $report->photo_url ?: $report->image_url;
             @endphp
-            @if($reportPhoto)
             <div class="mt-4">
-                <label class="text-primary-400 text-xs block mb-2">Photo</label>
-                <img src="{{ $reportPhoto }}" alt="Report Photo" class="mt-2 rounded-lg max-w-md border border-primary-700">
+                <label class="text-primary-400 text-xs block mb-2 font-medium">Incident Photo</label>
+                @if($reportPhoto)
+                    <div class="space-y-2">
+                        <div class="relative inline-block max-w-md rounded-lg overflow-hidden border border-primary-700 bg-primary-950">
+                            <img src="{{ $reportPhoto }}" 
+                                 alt="Report Photo" 
+                                 class="max-w-md max-h-96 w-auto object-contain rounded-lg"
+                                 onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'p-6 text-center text-primary-400 text-xs\'><i class=\'fas fa-image-slash text-2xl mb-2 text-primary-500 block\'></i>Photo file unavailable on server</div>';">
+                        </div>
+                        <div>
+                            <a href="{{ $reportPhoto }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-xs text-secondary-400 hover:text-secondary-300 transition">
+                                <i class="fas fa-arrow-up-right-from-square mr-1.5"></i>Open original photo in full tab
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-4 bg-primary-800/50 rounded-lg border border-primary-700/50 text-primary-400 text-xs flex items-center">
+                        <i class="fas fa-camera text-primary-500 mr-2 text-sm"></i> No photo was uploaded with this report.
+                    </div>
+                @endif
             </div>
-            @endif
         </div>
 
         <!-- Map View -->

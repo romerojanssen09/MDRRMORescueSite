@@ -200,127 +200,31 @@ searchInput?.addEventListener('input', function(e) {
     }, 500); // 500ms debounce
 });
 
-// Wait for Supabase client to be initialized
-function waitForSupabase(callback, maxAttempts = 10) {
-    let attempts = 0;
-    const checkInterval = setInterval(() => {
-        attempts++;
-        if (window.supabaseClient) {
-            clearInterval(checkInterval);
-            console.log('✅ Supabase client ready for reports page');
-            callback();
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            console.error('❌ Supabase client not available after', maxAttempts, 'attempts');
-        } else {
-            console.log('⏳ Waiting for Supabase client... attempt', attempts);
-        }
-    }, 500);
-}
-
-// Real-time subscriptions for reports
-function setupRealtimeSubscriptions() {
-    console.log('📡 Setting up real-time subscription for reports page...');
-    
-    const reportsChannel = window.supabaseClient
-        .channel('reports_page_realtime')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'emergency_reports' },
-            async (payload) => {
-                console.log('📡 Report change detected:', payload.eventType, payload);
-                
-                if (payload.eventType === 'INSERT') {
-                    // New report added - reload page to show it
-                    console.log('🆕 New report added, reloading...');
-                    window.location.reload();
-                    
-                } else if (payload.eventType === 'UPDATE') {
-                    // Report updated - update the row
-                    const updatedReport = payload.new;
-                    console.log('📝 Report updated:', updatedReport.id);
-                    console.log('📝 New status:', updatedReport.status);
-                    
-                    const row = document.querySelector(`tr[data-report-id="${updatedReport.id}"]`);
+// Periodic auto-check for report status updates
+setInterval(async () => {
+    try {
+        const res = await fetch('/api/mobile/reports?limit=10', { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.reports && data.reports.length > 0) {
+                data.reports.forEach(report => {
+                    const row = document.querySelector(`tr[data-report-id="${report.id}"]`);
                     if (row) {
-                        console.log('✅ Found row to update');
-                        
-                        // Highlight the row
-                        row.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-                        row.style.transition = 'background-color 0.3s';
-                        setTimeout(() => {
-                            row.style.backgroundColor = '';
-                        }, 2000);
-                        
-                        // Update status badge with correct colors matching the blade template
                         const statusCell = row.querySelector('td:nth-child(5)');
-                        if (statusCell) {
-                            let statusClass = '';
-                            let statusText = updatedReport.status;
-                            
-                            if (updatedReport.status === 'Pending') {
-                                statusClass = 'bg-accent-900 text-accent-300';
-                            } else if (updatedReport.status === 'In Progress') {
-                                statusClass = 'bg-secondary-900 text-secondary-300';
-                            } else if (updatedReport.status === 'Completed' || updatedReport.status === 'Resolved') {
-                                statusClass = 'bg-primary-700 text-primary-300';
-                                statusText = 'Completed';
-                            } else if (updatedReport.status === 'Cancelled') {
-                                statusClass = 'bg-red-900 text-red-300';
-                            } else {
-                                // Default fallback
-                                statusClass = 'bg-primary-700 text-primary-300';
-                            }
-                            
-                            statusCell.innerHTML = `
-                                <span class="status-badge" data-status="${updatedReport.status}">
-                                    <span class="px-2 py-1 text-xs rounded-md ${statusClass} font-medium">
-                                        ${statusText}
-                                    </span>
-                                </span>
-                            `;
-                            console.log('✅ Status badge updated to:', statusText, 'with class:', statusClass);
-                        } else {
-                            console.error('❌ Status cell not found');
+                        const badge = statusCell ? statusCell.querySelector('.status-badge') : null;
+                        if (badge && badge.getAttribute('data-status') !== report.status) {
+                            badge.setAttribute('data-status', report.status);
+                            let statusClass = 'bg-primary-700 text-primary-300';
+                            if (report.status === 'Pending') statusClass = 'bg-accent-900 text-accent-300';
+                            else if (report.status === 'In Progress') statusClass = 'bg-secondary-900 text-secondary-300';
+                            else if (report.status === 'Completed') statusClass = 'bg-secondary-400 text-primary-950 font-medium';
+                            badge.innerHTML = `<span class="px-2 py-1 text-xs rounded-md ${statusClass} font-medium">${report.status}</span>`;
                         }
-                        
-                        console.log('✅ Row updated in UI');
-                    } else {
-                        console.log('⚠️ Row not found in table, might be filtered out');
                     }
-                    
-                } else if (payload.eventType === 'DELETE') {
-                    // Report deleted - remove the row
-                    const row = document.querySelector(`tr[data-report-id="${payload.old.id}"]`);
-                    if (row) {
-                        row.style.opacity = '0';
-                        row.style.transition = 'opacity 0.3s';
-                        setTimeout(() => row.remove(), 300);
-                        console.log('🗑️ Row removed from UI');
-                    }
-                }
+                });
             }
-        )
-        .subscribe((status) => {
-            console.log('📊 Reports page subscription status:', status);
-            if (status === 'SUBSCRIBED') {
-                console.log('✅ Successfully subscribed to emergency_reports changes');
-            } else if (status === 'CLOSED') {
-                console.log('⚠️ Subscription closed');
-            } else if (status === 'CHANNEL_ERROR') {
-                console.error('❌ Subscription error');
-            }
-        });
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        if (reportsChannel) {
-            console.log('🧹 Cleaning up reports channel');
-            window.supabaseClient.removeChannel(reportsChannel);
         }
-    });
-}
-
-// Wait for Supabase to be ready, then setup subscriptions
-waitForSupabase(setupRealtimeSubscriptions);
+    } catch (e) {}
+}, 10000);
 </script>
 @endpush
