@@ -7,6 +7,17 @@ use Illuminate\Database\Connectors\PostgresConnector;
 class NeonPostgresConnector extends PostgresConnector
 {
     /**
+     * Default options for Neon PostgreSQL (enable emulated prepares for PgBouncer transaction pooling).
+     */
+    public function getDefaultOptions()
+    {
+        $options = parent::getDefaultOptions();
+        $options[\PDO::ATTR_EMULATE_PREPARES] = true;
+
+        return $options;
+    }
+
+    /**
      * Append Neon endpoint option for libpq clients without SNI support.
      */
     protected function addSslOptions($dsn, array $config)
