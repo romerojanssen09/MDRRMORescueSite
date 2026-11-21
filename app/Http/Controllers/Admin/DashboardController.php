@@ -11,78 +11,87 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Cache stats for 30 seconds to reduce database load
-        $stats = Cache::remember('dashboard_stats', 30, function () {
-            // Use a single query to get all report counts by status
-            $reportCounts = DB::table('emergency_reports')
-                ->selectRaw("
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending,
-                    COUNT(CASE WHEN status = 'In Progress' THEN 1 END) as in_progress,
-                    COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed
-                ")
-                ->first();
+        try {
+            // Cache stats for 30 seconds to reduce database load
+            $stats = Cache::remember('dashboard_stats', 30, function () {
+                // Use a single query to get all report counts by status
+                $reportCounts = DB::table('emergency_reports')
+                    ->selectRaw("
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending,
+                        COUNT(CASE WHEN status = 'In Progress' THEN 1 END) as in_progress,
+                        COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed
+                    ")
+                    ->first();
 
-            // Use a single query to get all user counts by role and verification
-            $userCounts = DB::table('users')
-                ->selectRaw("
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN role = 'citizen' THEN 1 END) as citizens,
-                    COUNT(CASE WHEN role = 'rescuer' THEN 1 END) as rescuers,
-                    COUNT(CASE WHEN role = 'rescuer' AND is_verified = true THEN 1 END) as verified_rescuers,
-                    COUNT(CASE WHEN role = 'rescuer' AND is_verified = false THEN 1 END) as pending_rescuers
-                ")
-                ->first();
+                // Use a single query to get all user counts by role and verification
+                $userCounts = DB::table('users')
+                    ->selectRaw("
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN role = 'citizen' THEN 1 END) as citizens,
+                        COUNT(CASE WHEN role = 'rescuer' THEN 1 END) as rescuers,
+                        COUNT(CASE WHEN role = 'rescuer' AND is_verified = true THEN 1 END) as verified_rescuers,
+                        COUNT(CASE WHEN role = 'rescuer' AND is_verified = false THEN 1 END) as pending_rescuers
+                    ")
+                    ->first();
 
-            // Use a single query to get team counts
-            $teamCounts = DB::table('rescue_teams')
-                ->selectRaw("
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN status = 'Available' THEN 1 END) as available
-                ")
-                ->first();
+                // Use a single query to get team counts
+                $teamCounts = DB::table('rescue_teams')
+                    ->selectRaw("
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'Available' THEN 1 END) as available
+                    ")
+                    ->first();
 
-            // Get available rescuers count (only verified)
-            $availableRescuers = DB::table('rescuer_profiles')
-                ->join('users', 'rescuer_profiles.user_id', '=', 'users.id')
-                ->where('rescuer_profiles.status', 'available')
-                ->where('users.is_verified', true)
-                ->count();
+                // Get available rescuers count (only verified)
+                $availableRescuers = DB::table('rescuer_profiles')
+                    ->join('users', 'rescuer_profiles.user_id', '=', 'users.id')
+                    ->where('rescuer_profiles.status', 'available')
+                    ->where('users.is_verified', true)
+                    ->count();
 
-            return [
-                'total_reports' => $reportCounts->total,
-                'pending_reports' => $reportCounts->pending,
-                'in_progress_reports' => $reportCounts->in_progress,
-                'completed_reports' => $reportCounts->completed,
-                'total_users' => $userCounts->total,
-                'total_citizens' => $userCounts->citizens,
-                'total_rescuers' => $userCounts->rescuers,
-                'verified_rescuers' => $userCounts->verified_rescuers,
-                'pending_rescuers' => $userCounts->pending_rescuers,
-                'available_rescuers' => $availableRescuers,
-                'total_teams' => $teamCounts->total,
-                'available_teams' => $teamCounts->available,
-            ];
-        });
+                return [
+                    'total_reports' => $reportCounts->total,
+                    'pending_reports' => $reportCounts->pending,
+                    'in_progress_reports' => $reportCounts->in_progress,
+                    'completed_reports' => $reportCounts->completed,
+                    'total_users' => $userCounts->total,
+                    'total_citizens' => $userCounts->citizens,
+                    'total_rescuers' => $userCounts->rescuers,
+                    'verified_rescuers' => $userCounts->verified_rescuers,
+                    'pending_rescuers' => $userCounts->pending_rescuers,
+                    'available_rescuers' => $availableRescuers,
+                    'total_teams' => $teamCounts->total,
+                    'available_teams' => $teamCounts->available,
+                ];
+            });
 
-        // Cache recent reports for 10 seconds
-        $recent_reports = Cache::remember('dashboard_recent_reports', 10, function () {
-            return EmergencyReport::with(['citizen:id,full_name', 'assignedRescuer:id,full_name'])
-                ->select('id', 'emergency_type', 'location', 'status', 'citizen_id', 'assigned_rescuer_id', 'created_at')
-                ->latest()
-                ->limit(10)
-                ->get();
-        });
+            // Cache recent reports for 10 seconds
+            $recent_reports = Cache::remember('dashboard_recent_reports', 10, function () {
+                return EmergencyReport::with(['citizen:id,full_name', 'assignedRescuer:id,full_name'])
+                    ->select('id', 'emergency_type', 'location', 'status', 'citizen_id', 'assigned_rescuer_id', 'created_at')
+                    ->latest()
+                    ->limit(10)
+                    ->get();
+            });
 
-        // Cache emergency types for 60 seconds
-        $emergency_types = Cache::remember('dashboard_emergency_types', 60, function () {
-            return DB::table('emergency_reports')
-                ->select('emergency_type', DB::raw('count(*) as count'))
-                ->groupBy('emergency_type')
-                ->orderByDesc('count')
-                ->get();
-        });
+            // Cache emergency types for 60 seconds
+            $emergency_types = Cache::remember('dashboard_emergency_types', 60, function () {
+                return DB::table('emergency_reports')
+                    ->select('emergency_type', DB::raw('count(*) as count'))
+                    ->groupBy('emergency_type')
+                    ->orderByDesc('count')
+                    ->get();
+            });
 
-        return view('admin.dashboard', compact('stats', 'recent_reports', 'emergency_types'));
+            return view('admin.dashboard', compact('stats', 'recent_reports', 'emergency_types'));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ], 500);
+        }
     }
 }
